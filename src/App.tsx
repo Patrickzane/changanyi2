@@ -195,30 +195,39 @@ const INITIAL_RESERVATIONS = [
 ];
 
 export default function App() {
-  // --- State ---
   const [lang, setLang] = useState('zh'); 
   const [viewMode, setViewMode] = useState('client'); 
   const [activeTab, setActiveTab] = useState('home'); 
-  
-  // Auth State
   const [currentUser, setCurrentUser] = useState(null); 
   const [showLoginModal, setShowLoginModal] = useState(false);
-
-  // Data State
   const [menuData, setMenuData] = useState(INITIAL_MENU);
   const [reservations, setReservations] = useState(INITIAL_RESERVATIONS);
   const [notices, setNotices] = useState(INITIAL_NOTICES);
-  
-  // Persistent Identity
+  const [isOracleOpen, setIsOracleOpen] = useState(false);
+  const [chatHistory, setChatHistory] = useState([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const chatEndRef = useRef(null);
+
   useEffect(() => {
     const savedUser = localStorage.getItem('changan_user_v2');
     if (savedUser) setCurrentUser(JSON.parse(savedUser));
   }, []);
 
+  useEffect(() => {
+    if (isOracleOpen && chatHistory.length === 0) {
+      let greeting = T[lang].welcome;
+      if (currentUser?.role === 'admin') greeting = T[lang].welcome_admin;
+      else if (currentUser?.role === 'member') greeting = `${T[lang].welcome_member} ${currentUser.level} ${currentUser.name}.`;
+      setChatHistory([{ role: 'system', text: greeting }]);
+    }
+  }, [isOracleOpen, currentUser, lang]); 
+
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [chatHistory, isOracleOpen]);
+
   const handleLogin = (userData) => {
     const role = userData.isMember ? 'member' : 'guest';
     const isAdmin = userData.phone === CONFIG.ADMIN_PHONE;
-    
     const userWithRole = { 
       ...userData, 
       role: isAdmin ? 'admin' : role, 
@@ -235,26 +244,6 @@ export default function App() {
     setActiveTab('home');
   };
 
-  // --- AI State ---
-  const [isOracleOpen, setIsOracleOpen] = useState(false);
-  const [chatHistory, setChatHistory] = useState([]);
-  const [inputMessage, setInputMessage] = useState('');
-  const [isAiLoading, setIsAiLoading] = useState(false);
-  const chatEndRef = useRef(null);
-
-  useEffect(() => {
-    if (isOracleOpen && chatHistory.length === 0) {
-      let greeting = T[lang].welcome;
-      if (currentUser?.role === 'admin') greeting = T[lang].welcome_admin;
-      else if (currentUser?.role === 'member') greeting = `${T[lang].welcome_member} ${currentUser.level} ${currentUser.name}.`;
-      
-      setChatHistory([{ role: 'system', text: greeting }]);
-    }
-  }, [isOracleOpen, currentUser, lang]); 
-
-  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [chatHistory, isOracleOpen]);
-
-  // --- MOCK INTELLIGENCE ENGINE ---
   const simulateAiResponse = async (input, lang, user) => {
     return new Promise((resolve) => {
       setTimeout(() => {
@@ -270,61 +259,32 @@ export default function App() {
         if (lowerInput.includes('book') || lowerInput.includes('reserv') || lowerInput.includes('订') || lowerInput.includes('mesa')) {
            const guestMatch = input.match(/(\d+)/); 
            const guests = guestMatch ? guestMatch[0] : "2";
-           
            if (!user) {
-             responseText = lang === 'zh' 
-               ? "我非常乐意为您安排。请先登录您的账户，以便我确认预订信息。"
-               : "Me encantaría ayudarle con eso. Por favor, inicie sesión para confirmar los detalles.";
+             responseText = lang === 'zh' ? "我非常乐意为您安排。请先登录您的账户，以便我确认预订信息。" : "Me encantaría ayudarle con eso. Por favor, inicie sesión para confirmar los detalles.";
            } else {
-             responseText = lang === 'zh'
-               ? `好的，${user.name}。我为您查询了空位。为您预留今晚的桌位。`
-               : `Entendido, ${user.name}. He verificado la disponibilidad. Reservando una mesa para esta noche.`;
-             
+             responseText = lang === 'zh' ? `好的，${user.name}。我为您查询了空位。为您预留今晚的桌位。` : `Entendido, ${user.name}. He verificado la disponibilidad. Reservando una mesa para esta noche.`;
              jsonAction = `$$JSON_ACTION$$ { "type": "create_reservation", "name": "${user.name}", "phone": "${user.phone}", "date": "Today", "time": "19:00", "guests": "${guests}" } $$END_JSON$$`;
            }
         }
         else if (lowerInput.includes('recommend') || lowerInput.includes('menu') || lowerInput.includes('推荐') || lowerInput.includes('吃') || lowerInput.includes('qué') || lowerInput.includes('que')) {
-           if (lowerInput.includes('spicy') || lowerInput.includes('辣') || lowerInput.includes('picante')) {
-             responseText = lang === 'zh'
-               ? "如果您喜欢吃辣，我们的【油泼面】是必点之选。滚烫的热油激发出辣椒面的浓郁香气，口感劲道。另外【大漠孜然羊排】也是绝佳的佐酒菜。"
-               : "Si le gusta lo picante, nuestros 【Fideos Youpo】 son imprescindibles. El aceite hirviendo despierta el aroma del chile. También recomiendo las 【Costillas de Cordero al Comino】.";
-           } else {
-             responseText = lang === 'zh'
-               ? "对于初次光临的客人，我强烈推荐我们的招牌【Biang Biang 面】搭配【腊汁肉夹馍】。这是最地道的长安风味。"
-               : "Para su primera visita, le recomiendo encarecidamente nuestros 【Fideos Biang Biang】 acompañados de un 【Rougamou】. Es el sabor más auténtico de Chang'an.";
-           }
+           responseText = lang === 'zh' ? "推荐您尝试招牌【Biang Biang 面】搭配【腊汁肉夹馍】。" : "Le recomiendo nuestros 【Fideos Biang Biang】 acompañados de un 【Rougamou】.";
         }
         else {
-           responseText = lang === 'zh'
-             ? "我是您的智能管家。您可以问我“有什么推荐菜？”或者告诉我“帮我订个位”。"
-             : "Soy su Concierge IA. Puede preguntarme '¿Qué recomienda?' o decirme 'Quiero reservar una mesa'.";
+           responseText = lang === 'zh' ? "我是您的智能管家。您可以问我“有什么推荐菜？”或者“帮我订个位”。" : "Soy su Concierge IA. Puede preguntarme '¿Qué recomienda?' o 'Reservar una mesa'.";
         }
-
         resolve({ text: responseText + (jsonAction ? "\n" + jsonAction : "") });
-      }, 1200); 
+      }, 1000); 
     });
   };
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
-
     const cleanInput = inputMessage.trim().toLowerCase();
     
     if (cleanInput === '/admin') {
       if (currentUser && currentUser.phone === CONFIG.ADMIN_PHONE) {
         setChatHistory(prev => [...prev, { role: 'user', text: inputMessage }]);
-        setTimeout(() => {
-          setViewMode('admin');
-          setInputMessage('');
-          setIsOracleOpen(false);
-        }, 500);
-        return;
-      } else {
-        setChatHistory(prev => [...prev, { role: 'user', text: inputMessage }]);
-        setTimeout(() => {
-            setChatHistory(prev => [...prev, { role: 'ai', text: lang === 'zh' ? "抱歉，我无法识别该指令。" : "Lo siento, comando no reconocido." }]);
-        }, 600);
-        setInputMessage('');
+        setTimeout(() => { setViewMode('admin'); setInputMessage(''); setIsOracleOpen(false); }, 500);
         return;
       }
     }
@@ -337,7 +297,6 @@ export default function App() {
     try {
       const data = await simulateAiResponse(userMsg, lang, currentUser);
       let aiText = data.text;
-
       if (aiText.includes('$$JSON_ACTION$$')) {
         const [displayText, jsonPart] = aiText.split('$$JSON_ACTION$$');
         const jsonString = jsonPart.split('$$END_JSON$$')[0];
@@ -351,83 +310,53 @@ export default function App() {
         } catch (e) {}
       }
       setChatHistory(prev => [...prev, { role: 'ai', text: aiText }]);
-    } catch (e) { 
-      setChatHistory(prev => [...prev, { role: 'ai', text: "Error." }]); 
-    } finally { 
-      setIsAiLoading(false); 
-    }
+    } catch (e) { setChatHistory(prev => [...prev, { role: 'ai', text: "Error." }]); } finally { setIsAiLoading(false); }
   };
 
   if (viewMode === 'admin') {
-    return (
-      <AdminDashboard 
-        reservations={reservations} 
-        setReservations={setReservations}
-        menuData={menuData} 
-        setMenuData={setMenuData}
-        notices={notices}
-        setNotices={setNotices}
-        onExit={() => setViewMode('client')} 
-      />
-    );
+    return <AdminDashboard reservations={reservations} setReservations={setReservations} menuData={menuData} notices={notices} setNotices={setNotices} onExit={() => setViewMode('client')} />;
   }
 
   return (
     <div className="min-h-screen bg-stone-950 text-stone-200 font-sans pb-24 md:pb-0 flex flex-col">
-      
       {/* Mobile Header */}
       <div className="md:hidden flex justify-between items-center p-4 bg-stone-950/90 backdrop-blur sticky top-0 z-40 border-b border-stone-800">
         <span className="text-xl font-serif font-bold text-white tracking-widest">{T[lang].brand}</span>
         <div className="flex items-center gap-4">
-          <button onClick={() => setLang(lang === 'zh' ? 'es' : 'zh')} className="text-xs uppercase font-bold text-stone-400 border border-stone-700 px-2 py-1 rounded hover:text-white">
-            {lang === 'zh' ? 'ES' : '中文'}
-          </button>
-          {CONFIG.ENABLE_RESERVATIONS && (
-            <button onClick={() => setIsOracleOpen(true)} className="text-amber-500 animate-pulse"><Sparkles size={24} /></button>
-          )}
+          <button onClick={() => setLang(lang === 'zh' ? 'es' : 'zh')} className="text-xs uppercase font-bold text-stone-400 border border-stone-700 px-2 py-1 rounded hover:text-white">{lang === 'zh' ? 'ES' : '中文'}</button>
+          {CONFIG.ENABLE_RESERVATIONS && <button onClick={() => setIsOracleOpen(true)} className="text-amber-500 animate-pulse"><Sparkles size={24} /></button>}
         </div>
       </div>
 
-      {/* Desktop Nav - 6.0 Full Width Symmetry */}
-      <nav className="hidden md:block fixed top-0 w-full z-50 bg-stone-950/90 backdrop-blur border-b border-stone-800 transition-all duration-300">
-        <div className="w-full max-w-[1920px] mx-auto px-12 h-24 grid grid-cols-3 items-center">
+      {/* --- DESKTOP FLOATING NAVBAR (V7.0) --- */}
+      <nav className="hidden md:flex fixed top-0 w-full z-50 justify-center pt-6 pointer-events-none">
+        <div className="pointer-events-auto bg-stone-950/80 backdrop-blur-md border border-stone-800/60 rounded-full px-8 py-3 grid grid-cols-[1fr_auto_1fr] items-center shadow-2xl w-full max-w-5xl">
           
-          {/* Left: Brand (Align Start) */}
+          {/* 1. Left: Brand */}
           <div className="flex flex-col justify-self-start">
-            <div className="text-2xl font-serif tracking-widest font-bold text-white leading-none">
-              {T[lang].brand}
-            </div>
+            <div className="text-2xl font-serif tracking-widest font-bold text-white leading-none">{T[lang].brand}</div>
             <span className="text-[10px] text-amber-600/80 uppercase tracking-[0.2em] mt-1">{T[lang].subtitle}</span>
           </div>
 
-          {/* Center: Links (Align Center) */}
-          <div className="flex justify-center space-x-16 text-sm tracking-widest uppercase font-medium justify-self-center">
+          {/* 2. Center: Menu Links */}
+          <div className="flex justify-center space-x-12 text-sm tracking-widest uppercase font-medium">
             <NavTextBtn label={T[lang].nav_home} active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
             <NavTextBtn label={T[lang].nav_menu} active={activeTab === 'menu'} onClick={() => setActiveTab('menu')} />
             <NavTextBtn label={T[lang].nav_events} active={activeTab === 'events'} onClick={() => setActiveTab('events')} />
             {CONFIG.ENABLE_RESERVATIONS && <NavTextBtn label={T[lang].nav_bookings} active={activeTab === 'profile'} onClick={() => currentUser ? setActiveTab('profile') : setShowLoginModal(true)} />}
           </div>
 
-          {/* Right: Actions (Align End) */}
-          <div className="flex items-center gap-8 justify-self-end">
-            <button onClick={() => setLang(lang === 'zh' ? 'es' : 'zh')} className="flex items-center gap-1 text-xs font-bold text-stone-400 hover:text-white transition-colors">
-              <Globe size={14} /> {lang === 'zh' ? 'ES' : '中文'}
-            </button>
-            
-            {CONFIG.ENABLE_RESERVATIONS && (
-              <button onClick={() => { if(!currentUser) setShowLoginModal(true); setIsOracleOpen(true); }} className="flex items-center gap-2 text-amber-500 hover:text-amber-400 transition-all">
-                <Sparkles size={16} />
-              </button>
-            )}
-
+          {/* 3. Right: Tools */}
+          <div className="flex items-center gap-6 justify-self-end">
+            <button onClick={() => setLang(lang === 'zh' ? 'es' : 'zh')} className="flex items-center gap-1 text-xs font-bold text-stone-400 hover:text-white transition-colors"><Globe size={14} /> {lang === 'zh' ? 'ES' : '中文'}</button>
+            {CONFIG.ENABLE_RESERVATIONS && <button onClick={() => { if(!currentUser) setShowLoginModal(true); setIsOracleOpen(true); }} className="flex items-center gap-2 text-amber-500 hover:text-amber-400 transition-all"><Sparkles size={16} /></button>}
             <div className="text-xs uppercase tracking-wider">
               {currentUser ? (
-                <span className="flex items-center gap-2 text-amber-600 border border-amber-900/50 px-4 py-2 rounded-full bg-stone-900/50 hover:bg-stone-800 transition-colors cursor-pointer" onClick={() => setActiveTab('profile')}>
-                  {currentUser.role === 'admin' ? <ShieldCheck size={14} /> : currentUser.role === 'member' ? <Crown size={14} fill="currentColor" /> : <User size={14} />} 
+                <span className="flex items-center gap-2 text-amber-600 border border-amber-900/50 px-3 py-1.5 rounded-full bg-stone-900/50 hover:bg-stone-800 cursor-pointer" onClick={() => setActiveTab('profile')}>
                   {currentUser.role === 'admin' ? 'ADMIN' : currentUser.name}
                 </span>
               ) : (
-                <button onClick={() => setShowLoginModal(true)} className="hover:text-white flex items-center gap-2 border border-stone-600 px-4 py-2 rounded-full transition-colors hover:border-white"><LogIn size={14} /> {T[lang].sign_in}</button>
+                <button onClick={() => setShowLoginModal(true)} className="hover:text-white flex items-center gap-2 border border-stone-600 px-3 py-1.5 rounded-full transition-colors hover:border-white"><LogIn size={14} /> {T[lang].sign_in}</button>
               )}
             </div>
           </div>
@@ -438,123 +367,54 @@ export default function App() {
       {showLoginModal && <AuthModal lang={lang} t={T[lang]} onClose={() => setShowLoginModal(false)} onLogin={handleLogin} />}
 
       {/* Main Content */}
-      <main className="flex-grow flex flex-col items-center w-full pt-24">
+      <main className="flex-grow flex flex-col items-center w-full">
         {activeTab === 'home' && (
-          <HeroSection 
-            lang={lang}
-            t={T[lang]}
-            notices={notices} 
-            reservationsEnabled={CONFIG.ENABLE_RESERVATIONS}
-            onCta={() => { 
-              if (CONFIG.ENABLE_RESERVATIONS) {
-                if(!currentUser) setShowLoginModal(true); 
-                setIsOracleOpen(true); 
-              } else {
-                setActiveTab('menu');
-              }
-            }} 
-          />
+          <HeroSection lang={lang} t={T[lang]} notices={notices} reservationsEnabled={CONFIG.ENABLE_RESERVATIONS} onCta={() => { if (CONFIG.ENABLE_RESERVATIONS) { if(!currentUser) setShowLoginModal(true); setIsOracleOpen(true); } else { setActiveTab('menu'); } }} />
         )}
-        <div className="w-full max-w-[1600px] mx-auto px-8 md:px-12"> 
+        <div className="w-full max-w-[1600px] mx-auto px-6 md:px-12"> 
           {activeTab === 'menu' && <MenuSection lang={lang} t={T[lang]} menuData={menuData} isMember={currentUser?.role === 'member'} />}
           {activeTab === 'events' && <EventsSection lang={lang} t={T[lang]} notices={notices} />}
           {activeTab === 'profile' && <ProfileSection lang={lang} t={T[lang]} user={currentUser} myBookings={reservations.filter(r => r.phone === currentUser?.phone)} onLogout={handleLogout} />}
         </div>
       </main>
 
-      {/* Footer - Constrained Content */}
+      {/* Footer */}
       <footer className="bg-stone-950 border-t border-stone-800 w-full mt-auto">
         <div className="max-w-[1600px] mx-auto py-12 px-12 text-center">
-          <p className="text-stone-600 text-xs uppercase tracking-widest mb-4">
-            {T[lang].footer_copy} <span className="text-stone-800 ml-2">v6.0 Full Width Symmetry</span>
-          </p>
-          <button 
-            onClick={() => {
-              if (!CONFIG.ENABLE_RESERVATIONS) {
-                 if(window.confirm(`${T[lang].staff_access}?`)) setViewMode('admin');
-              } else {
-                 if (currentUser?.phone === CONFIG.ADMIN_PHONE) {
-                   setViewMode('admin');
-                 } else {
-                   alert(lang === 'zh' ? "权限受限。请以经理身份登录。" : "Acceso restringido. Inicie sesión como Gerente.");
-                   setShowLoginModal(true);
-                 }
-              }
-            }}
-            className="inline-flex items-center gap-1 text-stone-800 hover:text-stone-600 transition-colors text-[10px] uppercase tracking-wider"
-          >
-            <Lock size={10} /> {T[lang].staff_access}
-          </button>
+          <p className="text-stone-600 text-xs uppercase tracking-widest mb-4">{T[lang].footer_copy} <span className="text-stone-800 ml-2">v7.0 Floating Island</span></p>
+          <button onClick={() => { if (!CONFIG.ENABLE_RESERVATIONS) { if(window.confirm(`${T[lang].staff_access}?`)) setViewMode('admin'); } else { if (currentUser?.phone === CONFIG.ADMIN_PHONE) { setViewMode('admin'); } else { alert(lang === 'zh' ? "权限受限。请以经理身份登录。" : "Acceso restringido."); setShowLoginModal(true); } } }} className="inline-flex items-center gap-1 text-stone-800 hover:text-stone-600 transition-colors text-[10px] uppercase tracking-wider"><Lock size={10} /> {T[lang].staff_access}</button>
         </div>
       </footer>
 
-      {/* Mobile Bottom Nav - 5 Column Grid */}
+      {/* Mobile Bottom Nav */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-stone-900 border-t border-stone-800 z-50 safe-area-bottom pb-1">
         <div className="grid grid-cols-5 h-[60px] items-end">
           <NavIconBtn icon={<Utensils size={20} />} label={T[lang].nav_menu} active={activeTab === 'menu'} onClick={() => setActiveTab('menu')} />
           <NavIconBtn icon={<Megaphone size={20} />} label={T[lang].nav_events} active={activeTab === 'events'} onClick={() => setActiveTab('events')} />
           <div className="relative h-full flex justify-center items-center pointer-events-none">
-             <div className="absolute -top-6 bg-amber-600 p-3.5 rounded-full shadow-[0_0_15px_rgba(217,119,6,0.4)] border-4 border-stone-950 transform active:scale-95 transition-transform z-10 pointer-events-auto" onClick={() => setActiveTab('home')}>
-               <ChefHat className="text-white" size={24} />
-             </div>
+             <div className="absolute -top-6 bg-amber-600 p-3.5 rounded-full shadow-[0_0_15px_rgba(217,119,6,0.4)] border-4 border-stone-950 transform active:scale-95 transition-transform z-10 pointer-events-auto" onClick={() => setActiveTab('home')}><ChefHat className="text-white" size={24} /></div>
           </div>
-          {CONFIG.ENABLE_RESERVATIONS ? (
-             <NavIconBtn 
-               icon={<Sparkles size={20} />} 
-               label={T[lang].nav_ai} 
-               active={isOracleOpen} 
-               onClick={() => { if(!currentUser) setShowLoginModal(true); setIsOracleOpen(true); }} 
-             />
-          ) : (
-             <NavIconBtn icon={<Phone size={20} />} label="Tel" onClick={() => alert("Call: +34 91 123 4567")} />
-          )}
-          {CONFIG.ENABLE_RESERVATIONS ? (
-            <NavIconBtn 
-              icon={<User size={20} />} 
-              label={currentUser ? (lang ==='zh'?'我':'Yo') : T[lang].sign_in} 
-              active={activeTab === 'profile'} 
-              onClick={() => currentUser ? setActiveTab('profile') : setShowLoginModal(true)} 
-            />
-          ) : (
-            <NavIconBtn icon={<MapPin size={20} />} label={T[lang].nav_info} onClick={() => alert("10 Gordon Street, London")} />
-          )}
+          {CONFIG.ENABLE_RESERVATIONS ? <NavIconBtn icon={<Sparkles size={20} />} label={T[lang].nav_ai} active={isOracleOpen} onClick={() => { if(!currentUser) setShowLoginModal(true); setIsOracleOpen(true); }} /> : <NavIconBtn icon={<Phone size={20} />} label="Tel" onClick={() => alert("Call: +34 91 123 4567")} />}
+          {CONFIG.ENABLE_RESERVATIONS ? <NavIconBtn icon={<User size={20} />} label={currentUser ? (lang ==='zh'?'我':'Yo') : T[lang].sign_in} active={activeTab === 'profile'} onClick={() => currentUser ? setActiveTab('profile') : setShowLoginModal(true)} /> : <NavIconBtn icon={<MapPin size={20} />} label={T[lang].nav_info} onClick={() => alert("10 Gordon Street, London")} />}
         </div>
       </div>
 
-      {/* AI Chat Drawer */}
+      {/* AI Drawer */}
       {CONFIG.ENABLE_RESERVATIONS && isOracleOpen && (
-        <div className="fixed inset-0 z-[60] flex flex-col bg-black/80 backdrop-blur-sm md:items-center md:justify-center p-0 md:p-4 animate-in fade-in zoom-in duration-200">
+        <div className="fixed inset-0 z-[60] flex flex-col bg-black/80 backdrop-blur-sm md:items-center md:justify-center p-0 md:p-4">
           <div className="flex flex-col h-full w-full md:max-w-md md:h-[600px] bg-stone-900 md:rounded-lg shadow-2xl overflow-hidden border border-stone-800">
             <div className="bg-stone-950 p-4 flex justify-between items-center border-b border-stone-800">
-              <div className="flex items-center gap-2">
-                <Sparkles className="text-amber-500" size={18} />
-                <h3 className="font-serif text-lg text-white">
-                  {currentUser?.role === 'admin' ? 'SYSTEM ADMIN' : T[lang].nav_ai}
-                </h3>
-              </div>
+              <div className="flex items-center gap-2"><Sparkles className="text-amber-500" size={18} /><h3 className="font-serif text-lg text-white">{currentUser?.role === 'admin' ? 'SYSTEM ADMIN' : T[lang].nav_ai}</h3></div>
               <button onClick={() => setIsOracleOpen(false)} className="p-2 hover:bg-stone-800 rounded-full"><X size={20} className="text-stone-400" /></button>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {chatHistory.map((msg, idx) => (
-                <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] rounded-2xl p-4 text-sm ${msg.role === 'user' ? 'bg-amber-700 text-white' : 'bg-stone-800 text-stone-300'}`}>
-                    {msg.text.split('\n').map((l, i) => <React.Fragment key={i}>{l}<br/></React.Fragment>)}
-                  </div>
-                </div>
-              ))}
+              {chatHistory.map((msg, idx) => (<div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}><div className={`max-w-[85%] rounded-2xl p-4 text-sm ${msg.role === 'user' ? 'bg-amber-700 text-white' : 'bg-stone-800 text-stone-300'}`}>{msg.text.split('\n').map((l, i) => <React.Fragment key={i}>{l}<br/></React.Fragment>)}</div></div>))}
               {isAiLoading && <div className="text-stone-500 text-xs ml-4 flex gap-2"><Loader2 className="animate-spin" size={12} /> Thinking...</div>}
               <div ref={chatEndRef} />
             </div>
             <div className="p-4 bg-stone-950 border-t border-stone-800">
               <div className="flex gap-2">
-                <input 
-                  type="text" 
-                  value={inputMessage} 
-                  onChange={e => setInputMessage(e.target.value)} 
-                  onKeyDown={e => e.key === 'Enter' && handleSendMessage()} 
-                  className="flex-1 bg-stone-900 border border-stone-700 rounded-full px-4 py-2 text-sm text-white focus:border-amber-600 outline-none" 
-                  placeholder={currentUser?.role === 'admin' ? T[lang].ai_admin_placeholder : T[lang].ai_placeholder} 
-                />
+                <input type="text" value={inputMessage} onChange={e => setInputMessage(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSendMessage()} className="flex-1 bg-stone-900 border border-stone-700 rounded-full px-4 py-2 text-sm text-white focus:border-amber-600 outline-none" placeholder={currentUser?.role === 'admin' ? T[lang].ai_admin_placeholder : T[lang].ai_placeholder} />
                 <button onClick={handleSendMessage} disabled={!inputMessage.trim()} className="bg-amber-600 text-white p-2 rounded-full"><Send size={18} /></button>
               </div>
             </div>
@@ -566,20 +426,10 @@ export default function App() {
 }
 
 // --- SUB-COMPONENTS ---
-
 function AuthModal({ lang, t, onClose, onLogin }) {
   const [mode, setMode] = useState('guest'); 
   const [formData, setFormData] = useState({ name: '', phone: '', password: '' });
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onLogin({ 
-      name: formData.name, 
-      phone: formData.phone, 
-      isMember: mode === 'member' 
-    });
-  };
-
+  const handleSubmit = (e) => { e.preventDefault(); onLogin({ name: formData.name, phone: formData.phone, isMember: mode === 'member' }); };
   return (
     <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex items-center justify-center p-4">
       <div className="bg-stone-900 border border-stone-800 w-full max-w-sm relative shadow-2xl overflow-hidden">
@@ -589,23 +439,13 @@ function AuthModal({ lang, t, onClose, onLogin }) {
           <button onClick={() => setMode('member')} className={`flex-1 py-4 text-xs font-bold uppercase tracking-widest ${mode === 'member' ? 'bg-amber-900/50 text-amber-500' : 'text-stone-500 hover:text-stone-300'}`}>{t.login_member_tab}</button>
         </div>
         <div className="p-8">
-          <div className="text-center mb-6">
-            {mode === 'member' ? <Crown size={40} className="mx-auto text-amber-500 mb-4" /> : <User size={40} className="mx-auto text-stone-500 mb-4" />}
-            <h2 className="text-2xl font-serif text-white mb-1">{t.login_title}</h2>
-            <p className="text-stone-500 text-xs">{mode === 'member' ? t.login_desc_member : t.login_desc_guest}</p>
-          </div>
+          <div className="text-center mb-6">{mode === 'member' ? <Crown size={40} className="mx-auto text-amber-500 mb-4" /> : <User size={40} className="mx-auto text-stone-500 mb-4" />}<h2 className="text-2xl font-serif text-white mb-1">{t.login_title}</h2><p className="text-stone-500 text-xs">{mode === 'member' ? t.login_desc_member : t.login_desc_guest}</p></div>
           <form onSubmit={handleSubmit} className="space-y-4">
             <input type="text" placeholder={t.name_placeholder} required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-stone-950 border border-stone-800 p-3 text-white outline-none focus:border-amber-600" />
             <input type="tel" placeholder={t.phone_placeholder} required value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full bg-stone-950 border border-stone-800 p-3 text-white outline-none focus:border-amber-600" />
             <p className="text-[10px] text-stone-600 text-center">({t.hint_admin})</p>
-            {mode === 'member' && (
-              <div className="animate-in fade-in slide-in-from-top-2">
-                 <input type="password" placeholder={t.pass_placeholder} value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full bg-stone-950 border border-stone-800 p-3 text-white outline-none focus:border-amber-600" />
-              </div>
-            )}
-            <button type="submit" className={`w-full py-3 font-bold uppercase tracking-widest text-xs transition-colors ${mode === 'member' ? 'bg-amber-600 hover:bg-amber-500 text-white' : 'bg-stone-700 hover:bg-stone-600 text-white'}`}>
-              {mode === 'member' ? t.btn_member : t.btn_guest}
-            </button>
+            {mode === 'member' && (<div className="animate-in fade-in slide-in-from-top-2"><input type="password" placeholder={t.pass_placeholder} value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full bg-stone-950 border border-stone-800 p-3 text-white outline-none focus:border-amber-600" /></div>)}
+            <button type="submit" className={`w-full py-3 font-bold uppercase tracking-widest text-xs transition-colors ${mode === 'member' ? 'bg-amber-600 hover:bg-amber-500 text-white' : 'bg-stone-700 hover:bg-stone-600 text-white'}`}>{mode === 'member' ? t.btn_member : t.btn_guest}</button>
           </form>
         </div>
       </div>
@@ -617,28 +457,9 @@ function HeroSection({ lang, t, notices, onCta, reservationsEnabled }) {
   const latestNotice = notices.find(n => n.active);
   return (
     <div className="relative h-screen flex items-center justify-center overflow-hidden w-full">
-       {latestNotice && (
-         <div className="absolute top-28 md:top-32 left-0 right-0 z-20 flex justify-center">
-           <div className="bg-amber-900/80 backdrop-blur border border-amber-700/50 px-6 py-2 rounded-full flex items-center gap-3 animate-fade-in-down shadow-lg cursor-pointer max-w-[90%]">
-             <Megaphone size={14} className="text-amber-200 animate-pulse" />
-             <span className="text-xs font-bold text-amber-100 uppercase tracking-wider truncate">{latestNotice.title[lang]}: {latestNotice.content[lang]}</span>
-           </div>
-         </div>
-       )}
-       <div className="absolute inset-0">
-          <img src="https://images.unsplash.com/photo-1552611052-33e04de081de?q=80&w=2600&auto=format&fit=crop" className="w-full h-full object-cover opacity-50" alt="bg" />
-          <div className="absolute inset-0 bg-gradient-to-b from-stone-950/60 via-stone-950/20 to-stone-950"></div>
-       </div>
-       <div className="relative z-10 text-center px-6 max-w-lg mx-auto">
-         <h1 className="text-5xl md:text-7xl font-serif font-bold text-white mb-6 leading-none">
-            {t.hero_title_1}<br/>
-            {t.hero_title_2}<span className="text-amber-600">'</span>{t.hero_title_3}
-         </h1>
-         <p className="text-stone-300 text-lg font-light mb-8 whitespace-pre-line">{t.hero_desc}</p>
-         <button onClick={onCta} className={`w-full md:w-auto text-white px-8 py-4 uppercase tracking-widest text-xs font-bold transition-all shadow-[0_0_20px_rgba(180,83,9,0.3)] ${reservationsEnabled ? 'bg-amber-700 hover:bg-amber-600' : 'border border-stone-400 hover:bg-white hover:text-stone-950'}`}>
-           {reservationsEnabled ? t.book_via_ai : t.view_menu}
-         </button>
-       </div>
+       {latestNotice && (<div className="absolute top-32 left-0 right-0 z-20 flex justify-center"><div className="bg-amber-900/80 backdrop-blur border border-amber-700/50 px-6 py-2 rounded-full flex items-center gap-3 animate-fade-in-down shadow-lg cursor-pointer max-w-[90%]"><Megaphone size={14} className="text-amber-200 animate-pulse" /><span className="text-xs font-bold text-amber-100 uppercase tracking-wider truncate">{latestNotice.title[lang]}: {latestNotice.content[lang]}</span></div></div>)}
+       <div className="absolute inset-0"><img src="https://images.unsplash.com/photo-1552611052-33e04de081de?q=80&w=2600&auto=format&fit=crop" className="w-full h-full object-cover opacity-50" alt="bg" /><div className="absolute inset-0 bg-gradient-to-b from-stone-950/60 via-stone-950/20 to-stone-950"></div></div>
+       <div className="relative z-10 text-center px-6 max-w-lg mx-auto"><h1 className="text-5xl md:text-7xl font-serif font-bold text-white mb-6 leading-none">{t.hero_title_1}<br/>{t.hero_title_2}<span className="text-amber-600">'</span>{t.hero_title_3}</h1><p className="text-stone-300 text-lg font-light mb-8 whitespace-pre-line">{t.hero_desc}</p><button onClick={onCta} className={`w-full md:w-auto text-white px-8 py-4 uppercase tracking-widest text-xs font-bold transition-all shadow-[0_0_20px_rgba(180,83,9,0.3)] ${reservationsEnabled ? 'bg-amber-700 hover:bg-amber-600' : 'border border-stone-400 hover:bg-white hover:text-stone-950'}`}>{reservationsEnabled ? t.book_via_ai : t.view_menu}</button></div>
     </div>
   );
 }
@@ -646,42 +467,8 @@ function HeroSection({ lang, t, notices, onCta, reservationsEnabled }) {
 function MenuSection({ lang, t, menuData, isMember }) {
   return (
     <div className="py-24 w-full">
-      {isMember && (
-        <div className="mb-12 bg-amber-900/20 border border-amber-700/30 p-4 flex items-center gap-3 rounded-lg justify-center animate-fade-in max-w-2xl mx-auto">
-          <Crown size={20} className="text-amber-500" />
-          <p className="text-amber-200 text-sm font-medium">{t.member_price_active}</p>
-        </div>
-      )}
-      <div className="space-y-16">
-        {Object.entries(menuData).map(([category, items]) => (
-          <div key={category}>
-            <h3 className="text-amber-600 uppercase tracking-widest text-xs font-bold mb-8 border-b border-stone-800 pb-2">{category}</h3>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {items.map(item => {
-                const finalPrice = isMember ? (item.price * (1 - CONFIG.MEMBER_DISCOUNT)).toFixed(1) : item.price;
-                return (
-                  <div key={item.id} className="group bg-stone-900/50 rounded-lg overflow-hidden border border-stone-800 hover:border-amber-800 transition-all hover:shadow-xl">
-                    <div className="h-64 overflow-hidden relative">
-                      <img src={item.img} alt={item.name[lang]} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-stone-900 via-transparent to-transparent opacity-80"></div>
-                      <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur px-3 py-1 rounded text-white font-bold border border-white/10">
-                        {CONFIG.CURRENCY}{finalPrice}
-                      </div>
-                    </div>
-                    <div className="p-6">
-                      <div className="flex justify-between items-baseline mb-2">
-                        <h4 className="text-xl text-white font-serif group-hover:text-amber-500 transition-colors">{item.name[lang]}</h4>
-                        {isMember && <span className="text-[10px] text-stone-500 line-through">{CONFIG.CURRENCY}{item.price}</span>}
-                      </div>
-                      <p className="text-stone-400 text-sm leading-relaxed">{item.desc[lang]}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
+      {isMember && (<div className="mb-12 bg-amber-900/20 border border-amber-700/30 p-4 flex items-center gap-3 rounded-lg justify-center animate-fade-in max-w-2xl mx-auto"><Crown size={20} className="text-amber-500" /><p className="text-amber-200 text-sm font-medium">{t.member_price_active}</p></div>)}
+      <div className="space-y-16">{Object.entries(menuData).map(([category, items]) => (<div key={category}><h3 className="text-amber-600 uppercase tracking-widest text-xs font-bold mb-8 border-b border-stone-800 pb-2">{category}</h3><div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">{items.map(item => { const finalPrice = isMember ? (item.price * (1 - CONFIG.MEMBER_DISCOUNT)).toFixed(1) : item.price; return (<div key={item.id} className="group bg-stone-900/50 rounded-lg overflow-hidden border border-stone-800 hover:border-amber-800 transition-all hover:shadow-xl"><div className="h-64 overflow-hidden relative"><img src={item.img} alt={item.name[lang]} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" /><div className="absolute inset-0 bg-gradient-to-t from-stone-900 via-transparent to-transparent opacity-80"></div><div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur px-3 py-1 rounded text-white font-bold border border-white/10">{CONFIG.CURRENCY}{finalPrice}</div></div><div className="p-6"><div className="flex justify-between items-baseline mb-2"><h4 className="text-xl text-white font-serif group-hover:text-amber-500 transition-colors">{item.name[lang]}</h4>{isMember && <span className="text-[10px] text-stone-500 line-through">{CONFIG.CURRENCY}{item.price}</span>}</div><p className="text-stone-400 text-sm leading-relaxed">{item.desc[lang]}</p></div></div>); })}</div></div>))}</div>
     </div>
   );
 }
@@ -689,23 +476,8 @@ function MenuSection({ lang, t, menuData, isMember }) {
 function EventsSection({ lang, t, notices }) {
   return (
     <div className="py-24 w-full min-h-screen">
-      <div className="text-center mb-16">
-        <span className="text-amber-600 uppercase tracking-widest text-xs font-bold mb-2 block">{t.happening}</span>
-        <h2 className="text-4xl font-serif text-white">{t.events_title}</h2>
-      </div>
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {notices.map(notice => (
-          <div key={notice.id} className="bg-stone-900 border border-stone-800 group hover:border-amber-700 transition-all overflow-hidden relative">
-            <div className={`h-1 w-full ${notice.type === 'event' ? 'bg-red-600' : notice.type === 'promo' ? 'bg-amber-500' : 'bg-blue-500'}`}></div>
-            <div className="p-8">
-              <span className={`text-[10px] uppercase tracking-widest px-2 py-1 rounded mb-4 inline-block ${notice.type === 'event' ? 'bg-red-900/30 text-red-500' : notice.type === 'promo' ? 'bg-amber-900/30 text-amber-500' : 'bg-blue-900/30 text-blue-500'}`}>{notice.type}</span>
-              <h3 className="text-xl font-serif text-white mb-4 group-hover:text-amber-500 transition-colors">{notice.title[lang]}</h3>
-              <p className="text-stone-400 text-sm leading-relaxed mb-6">{notice.content[lang]}</p>
-              <button className="text-xs uppercase tracking-widest text-stone-500 hover:text-white flex items-center gap-2">{t.details} <ArrowRight size={12} /></button>
-            </div>
-          </div>
-        ))}
-      </div>
+      <div className="text-center mb-16"><span className="text-amber-600 uppercase tracking-widest text-xs font-bold mb-2 block">{t.happening}</span><h2 className="text-4xl font-serif text-white">{t.events_title}</h2></div>
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">{notices.map(notice => (<div key={notice.id} className="bg-stone-900 border border-stone-800 group hover:border-amber-700 transition-all overflow-hidden relative"><div className={`h-1 w-full ${notice.type === 'event' ? 'bg-red-600' : notice.type === 'promo' ? 'bg-amber-500' : 'bg-blue-500'}`}></div><div className="p-8"><span className={`text-[10px] uppercase tracking-widest px-2 py-1 rounded mb-4 inline-block ${notice.type === 'event' ? 'bg-red-900/30 text-red-500' : notice.type === 'promo' ? 'bg-amber-900/30 text-amber-500' : 'bg-blue-900/30 text-blue-500'}`}>{notice.type}</span><h3 className="text-xl font-serif text-white mb-4 group-hover:text-amber-500 transition-colors">{notice.title[lang]}</h3><p className="text-stone-400 text-sm leading-relaxed mb-6">{notice.content[lang]}</p><button className="text-xs uppercase tracking-widest text-stone-500 hover:text-white flex items-center gap-2">{t.details} <ArrowRight size={12} /></button></div></div>))}</div>
     </div>
   );
 }
@@ -714,118 +486,21 @@ function ProfileSection({ lang, t, user, myBookings, onLogout }) {
   if (!user) return null;
   return (
     <div className="py-24 max-w-lg mx-auto min-h-screen w-full">
-      <div className="text-center mb-12">
-        <div className={`w-24 h-24 rounded-full mx-auto flex items-center justify-center border-4 mb-4 ${user.role === 'admin' ? 'bg-stone-200 border-stone-500' : user.role === 'member' ? 'bg-amber-900/20 border-amber-500' : 'bg-stone-800 border-stone-600'}`}>
-          {user.role === 'admin' ? <ShieldCheck size={40} className="text-stone-800" /> : user.role === 'member' ? <Crown size={40} className="text-amber-500" /> : <User size={40} className="text-stone-400" />}
-        </div>
-        <h2 className="text-3xl font-serif text-white mb-1">{user.name}</h2>
-        <div className="flex justify-center items-center gap-2 mb-2"><span className={`text-[10px] uppercase tracking-widest px-2 py-0.5 rounded ${user.role === 'member' ? 'bg-amber-600 text-white' : 'bg-stone-700 text-stone-300'}`}>{user.level}</span></div>
-        <p className="text-stone-500 text-sm">{user.phone}</p>
-        <button onClick={onLogout} className="mt-6 text-xs text-red-500 hover:text-red-400 border border-red-900/30 px-4 py-2 rounded-full flex items-center gap-2 mx-auto transition-colors hover:bg-red-900/10"><LogOut size={14} /> {t.sign_out}</button>
-      </div>
-      <div className="space-y-6">
-        <h3 className="text-stone-400 uppercase tracking-widest text-xs font-bold border-b border-stone-800 pb-2">{t.upcoming_res}</h3>
-        {myBookings.length === 0 ? (
-          <div className="text-center py-8 bg-stone-900/50 rounded-lg border border-stone-800 border-dashed"><p className="text-stone-600 text-sm">{t.no_bookings}</p></div>
-        ) : (
-          myBookings.map(b => (
-            <div key={b.id} className="bg-stone-900 border border-stone-800 p-5 rounded-lg flex justify-between items-center">
-              <div><p className="text-white font-medium mb-1">{b.date} @ {b.time}</p><p className="text-stone-500 text-xs">{b.guests} {t.guest} • {b.note}</p></div>
-              <span className="text-xs bg-green-900/30 text-green-500 px-2 py-1 rounded uppercase font-bold">{t[b.status] || b.status}</span>
-            </div>
-          ))
-        )}
-      </div>
+      <div className="text-center mb-12"><div className={`w-24 h-24 rounded-full mx-auto flex items-center justify-center border-4 mb-4 ${user.role === 'admin' ? 'bg-stone-200 border-stone-500' : user.role === 'member' ? 'bg-amber-900/20 border-amber-500' : 'bg-stone-800 border-stone-600'}`}>{user.role === 'admin' ? <ShieldCheck size={40} className="text-stone-800" /> : user.role === 'member' ? <Crown size={40} className="text-amber-500" /> : <User size={40} className="text-stone-400" />}</div><h2 className="text-3xl font-serif text-white mb-1">{user.name}</h2><div className="flex justify-center items-center gap-2 mb-2"><span className={`text-[10px] uppercase tracking-widest px-2 py-0.5 rounded ${user.role === 'member' ? 'bg-amber-600 text-white' : 'bg-stone-700 text-stone-300'}`}>{user.level}</span></div><p className="text-stone-500 text-sm">{user.phone}</p><button onClick={onLogout} className="mt-6 text-xs text-red-500 hover:text-red-400 border border-red-900/30 px-4 py-2 rounded-full flex items-center gap-2 mx-auto transition-colors hover:bg-red-900/10"><LogOut size={14} /> {t.sign_out}</button></div>
+      <div className="space-y-6"><h3 className="text-stone-400 uppercase tracking-widest text-xs font-bold border-b border-stone-800 pb-2">{t.upcoming_res}</h3>{myBookings.length === 0 ? (<div className="text-center py-8 bg-stone-900/50 rounded-lg border border-stone-800 border-dashed"><p className="text-stone-600 text-sm">{t.no_bookings}</p></div>) : (myBookings.map(b => (<div key={b.id} className="bg-stone-900 border border-stone-800 p-5 rounded-lg flex justify-between items-center"><div><p className="text-white font-medium mb-1">{b.date} @ {b.time}</p><p className="text-stone-500 text-xs">{b.guests} {t.guest} • {b.note}</p></div><span className="text-xs bg-green-900/30 text-green-500 px-2 py-1 rounded uppercase font-bold">{t[b.status] || b.status}</span></div>)))}</div>
     </div>
   );
 }
 
-// --- RESTORED ADMIN DASHBOARD ---
+// --- ADMIN DASHBOARD ---
 function AdminDashboard({ reservations, setReservations, menuData, setMenuData, notices, setNotices, onExit }) {
   const [adminTab, setAdminTab] = useState('dashboard');
-
-  const handleStatusChange = (id, newStatus) => {
-    setReservations(prev => prev.map(r => r.id === id ? { ...r, status: newStatus } : r));
-  };
-
-  const deleteNotice = (id) => {
-    setNotices(prev => prev.filter(n => n.id !== id));
-  };
-
+  const handleStatusChange = (id, newStatus) => { setReservations(prev => prev.map(r => r.id === id ? { ...r, status: newStatus } : r)); };
+  const deleteNotice = (id) => { setNotices(prev => prev.filter(n => n.id !== id)); };
   return (
     <div className="min-h-screen bg-stone-100 text-stone-800 font-sans flex">
-      <aside className="w-64 bg-stone-900 text-white flex flex-col hidden md:flex">
-        <div className="p-6 border-b border-stone-800"><h2 className="text-xl font-bold tracking-widest">CHANG'AN</h2><p className="text-xs text-stone-500 mt-1">Admin Panel</p></div>
-        <nav className="flex-1 p-4 space-y-2">
-          <AdminLink icon={<LayoutDashboard size={18} />} label="Dashboard" active={adminTab === 'dashboard'} onClick={() => setAdminTab('dashboard')} />
-          <AdminLink icon={<Calendar size={18} />} label="Reservations" active={adminTab === 'reservations'} onClick={() => setAdminTab('reservations')} count={reservations.filter(r => r.status === 'pending').length} />
-          <AdminLink icon={<Utensils size={18} />} label="Menu" active={adminTab === 'menu'} onClick={() => setAdminTab('menu')} />
-          <AdminLink icon={<Megaphone size={18} />} label="Notices" active={adminTab === 'notices'} onClick={() => setAdminTab('notices')} />
-        </nav>
-        <div className="p-4 border-t border-stone-800"><button onClick={onExit} className="flex items-center gap-3 text-stone-400 hover:text-white w-full px-4 py-2"><LogOut size={18} /> Exit Admin</button></div>
-      </aside>
-
-      <main className="flex-1 overflow-y-auto">
-        <header className="bg-white p-6 shadow-sm flex justify-between items-center sticky top-0 z-10">
-          <h1 className="text-2xl font-bold text-stone-800 capitalize">{adminTab}</h1>
-          <button onClick={onExit} className="md:hidden text-stone-500"><LogOut size={20} /></button>
-        </header>
-
-        <div className="p-8">
-          {adminTab === 'dashboard' && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <StatCard label="Live Revenue" value="€4,280" color="bg-green-500" />
-              <StatCard label="Pending Bookings" value={reservations.filter(r => r.status === 'pending').length} color="bg-amber-500" />
-              <StatCard label="Active Notices" value={notices.length} color="bg-blue-500" />
-            </div>
-          )}
-
-          {adminTab === 'reservations' && (
-            <div className="bg-white rounded-lg shadow-sm border border-stone-200 overflow-hidden">
-              <table className="w-full text-left">
-                <thead className="bg-stone-50 text-stone-500 text-xs uppercase tracking-wider"><tr><th className="p-4">Guest</th><th className="p-4">Slot</th><th className="p-4">Status</th><th className="p-4">Actions</th></tr></thead>
-                <tbody className="divide-y divide-stone-100 text-sm">
-                  {reservations.sort((a,b) => b.id - a.id).map(res => (
-                    <tr key={res.id} className="hover:bg-stone-50">
-                      <td className="p-4"><p className="font-bold">{res.name}</p><p className="text-xs text-stone-500">{res.phone} • {res.guests} ppl</p></td>
-                      <td className="p-4">{res.time} ({res.date})</td>
-                      <td className="p-4"><span className={`px-2 py-1 rounded-full text-xs font-bold ${res.status === 'confirmed' ? 'bg-green-100 text-green-700' : res.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>{res.status}</span></td>
-                      <td className="p-4 flex gap-2">{res.status === 'pending' && (<><button onClick={() => handleStatusChange(res.id, 'confirmed')} className="p-2 bg-green-50 text-green-600 rounded"><CheckCircle size={16} /></button><button onClick={() => handleStatusChange(res.id, 'rejected')} className="p-2 bg-red-50 text-red-600 rounded"><X size={16} /></button></>)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {adminTab === 'menu' && (
-            <div className="grid gap-4">
-               {Object.entries(menuData).flatMap(([cat, items]) => items).map(item => (
-                 <div key={item.id} className="flex items-center justify-between p-4 bg-white border border-stone-200 rounded">
-                   <div className="flex items-center gap-4">
-                     <img src={item.img} className="w-12 h-12 rounded object-cover" alt="" />
-                     <div><p className="font-bold">{item.name.zh} / {item.name.es}</p><p className="text-xs text-stone-500">€{item.price}</p></div>
-                   </div>
-                   <button className="text-stone-400 hover:text-amber-600"><Edit3 size={18} /></button>
-                 </div>
-               ))}
-            </div>
-          )}
-
-          {adminTab === 'notices' && (
-            <div className="space-y-4">
-              <button onClick={() => setNotices([...notices, { id: Date.now(), title: { zh: '新公告', es: 'Nuevo Aviso' }, type: 'news', content: { zh: '...', es: '...' }, active: true }])} className="bg-stone-900 text-white px-4 py-2 rounded text-sm mb-4">Add Notice</button>
-              {notices.map(notice => (
-                <div key={notice.id} className="bg-white p-4 border border-stone-200 rounded flex justify-between items-start">
-                  <div><h4 className="font-bold">{notice.title.zh}</h4><p className="text-sm text-stone-600">{notice.content.zh}</p><span className="text-xs bg-stone-100 px-2 py-0.5 rounded mt-2 inline-block uppercase">{notice.type}</span></div>
-                  <button onClick={() => deleteNotice(notice.id)} className="text-red-400 hover:text-red-600"><Trash2 size={18} /></button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </main>
-    </div>
+      <aside className="w-64 bg-stone-900 text-white flex flex-col hidden md:flex"><div className="p-6 border-b border-stone-800"><h2 className="text-xl font-bold tracking-widest">CHANG'AN</h2><p className="text-xs text-stone-500 mt-1">Admin Panel</p></div><nav className="flex-1 p-4 space-y-2"><AdminLink icon={<LayoutDashboard size={18} />} label="Dashboard" active={adminTab === 'dashboard'} onClick={() => setAdminTab('dashboard')} /><AdminLink icon={<Calendar size={18} />} label="Reservations" active={adminTab === 'reservations'} onClick={() => setAdminTab('reservations')} count={reservations.filter(r => r.status === 'pending').length} /><AdminLink icon={<Utensils size={18} />} label="Menu" active={adminTab === 'menu'} onClick={() => setAdminTab('menu')} /><AdminLink icon={<Megaphone size={18} />} label="Notices" active={adminTab === 'notices'} onClick={() => setAdminTab('notices')} /></nav><div className="p-4 border-t border-stone-800"><button onClick={onExit} className="flex items-center gap-3 text-stone-400 hover:text-white w-full px-4 py-2"><LogOut size={18} /> Exit Admin</button></div></aside>
+      <main className="flex-1 overflow-y-auto"><header className="bg-white p-6 shadow-sm flex justify-between items-center sticky top-0 z-10"><h1 className="text-2xl font-bold text-stone-800 capitalize">{adminTab}</h1><button onClick={onExit} className="md:hidden text-stone-500"><LogOut size={20} /></button></header><div className="p-8">{adminTab === 'dashboard' && (<div className="grid grid-cols-1 md:grid-cols-3 gap-6"><StatCard label="Live Revenue" value="€4,280" color="bg-green-500" /><StatCard label="Pending Bookings" value={reservations.filter(r => r.status === 'pending').length} color="bg-amber-500" /><StatCard label="Active Notices" value={notices.length} color="bg-blue-500" /></div>)}{adminTab === 'reservations' && (<div className="bg-white rounded-lg shadow-sm border border-stone-200 overflow-hidden"><table className="w-full text-left"><thead className="bg-stone-50 text-stone-500 text-xs uppercase tracking-wider"><tr><th className="p-4">Guest</th><th className="p-4">Slot</th><th className="p-4">Status</th><th className="p-4">Actions</th></tr></thead><tbody className="divide-y divide-stone-100 text-sm">{reservations.sort((a,b) => b.id - a.id).map(res => (<tr key={res.id} className="hover:bg-stone-50"><td className="p-4"><p className="font-bold">{res.name}</p><p className="text-xs text-stone-500">{res.phone} • {res.guests} ppl</p></td><td className="p-4">{res.time} ({res.date})</td><td className="p-4"><span className={`px-2 py-1 rounded-full text-xs font-bold ${res.status === 'confirmed' ? 'bg-green-100 text-green-700' : res.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>{res.status}</span></td><td className="p-4 flex gap-2">{res.status === 'pending' && (<><button onClick={() => handleStatusChange(res.id, 'confirmed')} className="p-2 bg-green-50 text-green-600 rounded"><CheckCircle size={16} /></button><button onClick={() => handleStatusChange(res.id, 'rejected')} className="p-2 bg-red-50 text-red-600 rounded"><X size={16} /></button></>)}</td></tr>))}</tbody></table></div>)}{adminTab === 'menu' && (<div className="grid gap-4">{Object.entries(menuData).flatMap(([cat, items]) => items).map(item => (<div key={item.id} className="flex items-center justify-between p-4 bg-white border border-stone-200 rounded"><div className="flex items-center gap-4"><img src={item.img} className="w-12 h-12 rounded object-cover" alt="" /><div><p className="font-bold">{item.name.zh} / {item.name.es}</p><p className="text-xs text-stone-500">€{item.price}</p></div></div><button className="text-stone-400 hover:text-amber-600"><Edit3 size={18} /></button></div>))}</div>)}{adminTab === 'notices' && (<div className="space-y-4"><button onClick={() => setNotices([...notices, { id: Date.now(), title: { zh: '新公告', es: 'Nuevo Aviso' }, type: 'news', content: { zh: '...', es: '...' }, active: true }])} className="bg-stone-900 text-white px-4 py-2 rounded text-sm mb-4">Add Notice</button>{notices.map(notice => (<div key={notice.id} className="bg-white p-4 border border-stone-200 rounded flex justify-between items-start"><div><h4 className="font-bold">{notice.title.zh}</h4><p className="text-sm text-stone-600">{notice.content.zh}</p><span className="text-xs bg-stone-100 px-2 py-0.5 rounded mt-2 inline-block uppercase">{notice.type}</span></div><button onClick={() => deleteNotice(notice.id)} className="text-red-400 hover:text-red-600"><Trash2 size={18} /></button></div>))}</div>)}</div></main></div>
   );
 }
 
@@ -838,10 +513,6 @@ const StatCard = ({ label, value, color }) => (
 const NavTextBtn = ({ label, active, onClick }) => (
   <button onClick={onClick} className={`hover:text-amber-500 transition-colors ${active ? 'text-amber-500' : 'text-stone-400'}`}>{label}</button>
 );
-// Updated Button Component for Mobile Sizing
 const NavIconBtn = ({ icon, label, active, onClick }) => (
-  <button onClick={onClick} className={`flex flex-col items-center justify-center gap-1 w-full h-full ${active ? 'text-amber-500' : 'text-stone-600'}`}>
-    {icon}
-    <span className="text-[10px] font-medium leading-none">{label}</span>
-  </button>
+  <button onClick={onClick} className={`flex flex-col items-center justify-center gap-1 w-full h-full ${active ? 'text-amber-500' : 'text-stone-600'}`}>{icon}<span className="text-[10px] font-medium leading-none">{label}</span></button>
 );
