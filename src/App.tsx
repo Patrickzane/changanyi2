@@ -3,12 +3,14 @@ import {
   Menu, X, MapPin, Phone, Instagram, Facebook, Twitter, 
   ArrowRight, Utensils, Sparkles, Send, Loader2, 
   User, Calendar, ChefHat, LayoutDashboard, Settings, 
-  LogOut, PlusCircle, Trash2, CheckCircle, Bell, Clock, Users, LogIn, Crown, Megaphone, Tag, Image as ImageIcon, Edit3, Lock, ShieldCheck, Globe
+  LogOut, PlusCircle, Trash2, CheckCircle, Bell, Clock, Users, LogIn, Crown, Megaphone, Tag, Image as ImageIcon, Edit3, Lock, ShieldCheck, Globe, MessageSquare
 } from 'lucide-react';
 
 // --- CONFIGURATION ---
 const CONFIG = {
+  // SET THIS TO FALSE TO TEST "LITE" VERSION
   ENABLE_RESERVATIONS: true, 
+  
   MAX_TABLES_PER_SLOT: 5, 
   MEMBER_DISCOUNT: 0.10, 
   CURRENCY: '€', 
@@ -27,7 +29,8 @@ const T = {
     nav_menu: "膳单",
     nav_events: "雅集",
     nav_bookings: "我的预订",
-    nav_ai: "智能管家",
+    nav_ai: "AI 管家",
+    nav_info: "概况",
     sign_in: "登入",
     sign_out: "退出",
     staff_access: "员工通道",
@@ -73,7 +76,8 @@ const T = {
     nav_menu: "Menú",
     nav_events: "Eventos",
     nav_bookings: "Reservas",
-    nav_ai: "Concierge IA",
+    nav_ai: "IA",
+    nav_info: "Info",
     sign_in: "Acceder",
     sign_out: "Salir",
     staff_access: "Acceso Personal",
@@ -192,7 +196,7 @@ const INITIAL_RESERVATIONS = [
 
 export default function App() {
   // --- State ---
-  const [lang, setLang] = useState('zh'); // 'zh' or 'es'
+  const [lang, setLang] = useState('zh'); 
   const [viewMode, setViewMode] = useState('client'); 
   const [activeTab, setActiveTab] = useState('home'); 
   
@@ -251,7 +255,6 @@ export default function App() {
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [chatHistory, isOracleOpen]);
 
   // --- MOCK INTELLIGENCE ENGINE ---
-  // Replaces the broken Google API fetch with robust local logic
   const simulateAiResponse = async (input, lang, user) => {
     return new Promise((resolve) => {
       setTimeout(() => {
@@ -259,16 +262,13 @@ export default function App() {
         let responseText = "";
         let jsonAction = "";
 
-        // 1. ADMIN CHECK
         if (lowerInput === '/admin') {
            resolve({ text: "...", action: "ADMIN_TRIGGER" });
            return;
         }
 
-        // 2. BOOKING INTENT (Simple Regex Simulation)
         if (lowerInput.includes('book') || lowerInput.includes('reserv') || lowerInput.includes('订') || lowerInput.includes('mesa')) {
-           // Mock extraction of details
-           const guestMatch = input.match(/(\d+)/); // Find first number
+           const guestMatch = input.match(/(\d+)/); 
            const guests = guestMatch ? guestMatch[0] : "2";
            
            if (!user) {
@@ -283,7 +283,6 @@ export default function App() {
              jsonAction = `$$JSON_ACTION$$ { "type": "create_reservation", "name": "${user.name}", "phone": "${user.phone}", "date": "Today", "time": "19:00", "guests": "${guests}" } $$END_JSON$$`;
            }
         }
-        // 3. MENU / RECOMMENDATION INTENT
         else if (lowerInput.includes('recommend') || lowerInput.includes('menu') || lowerInput.includes('推荐') || lowerInput.includes('吃') || lowerInput.includes('qué') || lowerInput.includes('que')) {
            if (lowerInput.includes('spicy') || lowerInput.includes('辣') || lowerInput.includes('picante')) {
              responseText = lang === 'zh'
@@ -295,7 +294,6 @@ export default function App() {
                : "Para su primera visita, le recomiendo encarecidamente nuestros 【Fideos Biang Biang】 acompañados de un 【Rougamou】. Es el sabor más auténtico de Chang'an.";
            }
         }
-        // 4. GREETING / DEFAULT
         else {
            responseText = lang === 'zh'
              ? "我是您的智能管家。您可以问我“有什么推荐菜？”或者告诉我“帮我订个位”。"
@@ -303,17 +301,15 @@ export default function App() {
         }
 
         resolve({ text: responseText + (jsonAction ? "\n" + jsonAction : "") });
-      }, 1200); // Simulate network delay
+      }, 1200); 
     });
   };
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
 
-    // --- SECURITY CHECK (Case Insensitive) ---
     const cleanInput = inputMessage.trim().toLowerCase();
     
-    // Handle Admin Command via Mock Logic to keep consistent
     if (cleanInput === '/admin') {
       if (currentUser && currentUser.phone === CONFIG.ADMIN_PHONE) {
         setChatHistory(prev => [...prev, { role: 'user', text: inputMessage }]);
@@ -339,7 +335,6 @@ export default function App() {
     setIsAiLoading(true);
 
     try {
-      // USE LOCAL SIMULATION INSTEAD OF FETCH
       const data = await simulateAiResponse(userMsg, lang, currentUser);
       let aiText = data.text;
 
@@ -363,7 +358,6 @@ export default function App() {
     }
   };
 
-  // Switch to Full Admin Dashboard
   if (viewMode === 'admin') {
     return (
       <AdminDashboard 
@@ -379,7 +373,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-950 text-stone-200 font-sans pb-20 md:pb-0 flex flex-col">
+    <div className="min-h-screen bg-stone-950 text-stone-200 font-sans pb-24 md:pb-0 flex flex-col">
       
       {/* Mobile Header */}
       <div className="md:hidden flex justify-between items-center p-4 bg-stone-950/90 backdrop-blur sticky top-0 z-40 border-b border-stone-800">
@@ -394,39 +388,41 @@ export default function App() {
         </div>
       </div>
 
-      {/* Desktop Nav */}
-      <nav className="hidden md:flex fixed w-full z-50 py-6 px-8 justify-between items-center bg-stone-950/80 backdrop-blur">
-        <div className="flex flex-col">
+      {/* Desktop Nav - Centered Layout */}
+      <nav className="hidden md:flex fixed w-full z-50 py-6 px-10 justify-between items-center bg-stone-950/90 backdrop-blur border-b border-stone-800/50">
+        <div className="flex flex-col w-1/4">
           <div className="text-2xl font-serif tracking-widest font-bold text-white border-l-4 border-amber-600 pl-3 leading-none">
             {T[lang].brand}
           </div>
           <span className="text-[10px] text-amber-600/80 uppercase tracking-[0.2em] pl-4 mt-1">{T[lang].subtitle}</span>
         </div>
 
-        <div className="flex space-x-12 text-sm tracking-widest uppercase font-medium">
+        <div className="flex justify-center w-2/4 space-x-12 text-sm tracking-widest uppercase font-medium">
           <NavTextBtn label={T[lang].nav_home} active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
           <NavTextBtn label={T[lang].nav_menu} active={activeTab === 'menu'} onClick={() => setActiveTab('menu')} />
           <NavTextBtn label={T[lang].nav_events} active={activeTab === 'events'} onClick={() => setActiveTab('events')} />
           {CONFIG.ENABLE_RESERVATIONS && <NavTextBtn label={T[lang].nav_bookings} active={activeTab === 'profile'} onClick={() => currentUser ? setActiveTab('profile') : setShowLoginModal(true)} />}
-          
-          {CONFIG.ENABLE_RESERVATIONS && (
-            <button onClick={() => { if(!currentUser) setShowLoginModal(true); setIsOracleOpen(true); }} className="flex items-center gap-2 text-amber-500 border border-amber-600/30 px-4 py-1 rounded-full hover:bg-amber-900/20 transition-all">
-              <Sparkles size={14} /> {T[lang].nav_ai}
-            </button>
-          )}
         </div>
-        <div className="flex items-center gap-6">
+
+        <div className="flex items-center justify-end gap-6 w-1/4">
           <button onClick={() => setLang(lang === 'zh' ? 'es' : 'zh')} className="flex items-center gap-1 text-xs font-bold text-stone-400 hover:text-white transition-colors">
             <Globe size={14} /> {lang === 'zh' ? 'ES' : '中文'}
           </button>
+          
+          {CONFIG.ENABLE_RESERVATIONS && (
+            <button onClick={() => { if(!currentUser) setShowLoginModal(true); setIsOracleOpen(true); }} className="flex items-center gap-2 text-amber-500 hover:text-amber-400 transition-all">
+              <Sparkles size={16} />
+            </button>
+          )}
+
           <div className="text-xs uppercase tracking-wider">
             {currentUser ? (
-              <span className="flex items-center gap-2 text-amber-600">
+              <span className="flex items-center gap-2 text-amber-600 border border-amber-900/50 px-3 py-1.5 rounded-full bg-stone-900/50">
                 {currentUser.role === 'admin' ? <ShieldCheck size={14} /> : currentUser.role === 'member' ? <Crown size={14} fill="currentColor" /> : <User size={14} />} 
                 {currentUser.role === 'admin' ? 'ADMIN' : currentUser.name}
               </span>
             ) : (
-              <button onClick={() => setShowLoginModal(true)} className="hover:text-white flex items-center gap-2"><LogIn size={14} /> {T[lang].sign_in}</button>
+              <button onClick={() => setShowLoginModal(true)} className="hover:text-white flex items-center gap-2 border border-stone-600 px-3 py-1.5 rounded-full transition-colors hover:border-white"><LogIn size={14} /> {T[lang].sign_in}</button>
             )}
           </div>
         </div>
@@ -435,8 +431,8 @@ export default function App() {
       {/* Login Modal */}
       {showLoginModal && <AuthModal lang={lang} t={T[lang]} onClose={() => setShowLoginModal(false)} onLogin={handleLogin} />}
 
-      {/* Main Content */}
-      <main className="flex-grow">
+      {/* Main Content - Improved Centering */}
+      <main className="flex-grow flex flex-col items-center w-full">
         {activeTab === 'home' && (
           <HeroSection 
             lang={lang}
@@ -453,17 +449,18 @@ export default function App() {
             }} 
           />
         )}
-        {activeTab === 'menu' && <MenuSection lang={lang} t={T[lang]} menuData={menuData} isMember={currentUser?.role === 'member'} />}
-        {activeTab === 'events' && <EventsSection lang={lang} t={T[lang]} notices={notices} />}
-        {activeTab === 'profile' && <ProfileSection lang={lang} t={T[lang]} user={currentUser} myBookings={reservations.filter(r => r.phone === currentUser?.phone)} onLogout={handleLogout} />}
+        <div className="w-full max-w-7xl mx-auto">
+          {activeTab === 'menu' && <MenuSection lang={lang} t={T[lang]} menuData={menuData} isMember={currentUser?.role === 'member'} />}
+          {activeTab === 'events' && <EventsSection lang={lang} t={T[lang]} notices={notices} />}
+          {activeTab === 'profile' && <ProfileSection lang={lang} t={T[lang]} user={currentUser} myBookings={reservations.filter(r => r.phone === currentUser?.phone)} onLogout={handleLogout} />}
+        </div>
       </main>
 
       {/* Footer */}
-      <footer className="bg-stone-950 border-t border-stone-800 py-8 px-6 text-center">
+      <footer className="bg-stone-950 border-t border-stone-800 py-8 px-6 text-center w-full mt-auto">
         <p className="text-stone-600 text-xs uppercase tracking-widest mb-4">
           {T[lang].footer_copy}
         </p>
-        
         <button 
           onClick={() => {
             if (!CONFIG.ENABLE_RESERVATIONS) {
@@ -483,25 +480,52 @@ export default function App() {
         </button>
       </footer>
 
-      {/* Mobile Bottom Nav */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-stone-900 border-t border-stone-800 flex justify-around py-3 z-50 safe-area-bottom">
-        <NavIconBtn icon={<Utensils size={20} />} label={T[lang].nav_menu} active={activeTab === 'menu'} onClick={() => setActiveTab('menu')} />
-        <NavIconBtn icon={<Megaphone size={20} />} label={T[lang].nav_events} active={activeTab === 'events'} onClick={() => setActiveTab('events')} />
-        
-        <div className="relative -top-8 bg-amber-600 p-4 rounded-full shadow-lg border-4 border-stone-950" onClick={() => setActiveTab('home')}>
-           <ChefHat className="text-white" size={24} />
+      {/* Mobile Bottom Nav - 2-1-2 Symmetry */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-stone-900 border-t border-stone-800 flex justify-between items-end px-4 py-2 z-50 safe-area-bottom h-[80px]">
+        {/* Left Side (2 items) */}
+        <div className="flex gap-1 w-[35%] justify-around pb-2">
+          <NavIconBtn icon={<Utensils size={20} />} label={T[lang].nav_menu} active={activeTab === 'menu'} onClick={() => setActiveTab('menu')} />
+          <NavIconBtn icon={<Megaphone size={20} />} label={T[lang].nav_events} active={activeTab === 'events'} onClick={() => setActiveTab('events')} />
         </div>
-        
-        {CONFIG.ENABLE_RESERVATIONS ? (
-          <NavIconBtn icon={<User size={20} />} label={currentUser ? "Me" : T[lang].sign_in} active={activeTab === 'profile'} onClick={() => currentUser ? setActiveTab('profile') : setShowLoginModal(true)} />
-        ) : (
-          <NavIconBtn icon={<MapPin size={20} />} label="Info" onClick={() => alert("10 Gordon Street, London")} />
-        )}
+
+        {/* Center Floating Button (1 item) */}
+        <div className="relative -top-6 w-[20%] flex justify-center" onClick={() => setActiveTab('home')}>
+           <div className="bg-amber-600 p-4 rounded-full shadow-[0_0_15px_rgba(217,119,6,0.4)] border-4 border-stone-950 transform hover:scale-105 transition-transform">
+             <ChefHat className="text-white" size={28} />
+           </div>
+        </div>
+
+        {/* Right Side (2 items) */}
+        <div className="flex gap-1 w-[35%] justify-around pb-2">
+          {/* Item 4: AI Concierge (Adding this creates symmetry) */}
+          {CONFIG.ENABLE_RESERVATIONS ? (
+             <NavIconBtn 
+               icon={<Sparkles size={20} />} 
+               label={T[lang].nav_ai} 
+               active={isOracleOpen} 
+               onClick={() => { if(!currentUser) setShowLoginModal(true); setIsOracleOpen(true); }} 
+             />
+          ) : (
+             <NavIconBtn icon={<Phone size={20} />} label="Tel" onClick={() => alert("Call: +34 91 123 4567")} />
+          )}
+
+          {/* Item 5: Profile/Login */}
+          {CONFIG.ENABLE_RESERVATIONS ? (
+            <NavIconBtn 
+              icon={<User size={20} />} 
+              label={currentUser ? (lang ==='zh'?'我':'Yo') : T[lang].sign_in} 
+              active={activeTab === 'profile'} 
+              onClick={() => currentUser ? setActiveTab('profile') : setShowLoginModal(true)} 
+            />
+          ) : (
+            <NavIconBtn icon={<MapPin size={20} />} label={T[lang].nav_info} onClick={() => alert("10 Gordon Street, London")} />
+          )}
+        </div>
       </div>
 
       {/* AI Chat Drawer */}
       {CONFIG.ENABLE_RESERVATIONS && isOracleOpen && (
-        <div className="fixed inset-0 z-[60] flex flex-col bg-black/80 backdrop-blur-sm md:items-center md:justify-center p-0 md:p-4">
+        <div className="fixed inset-0 z-[60] flex flex-col bg-black/80 backdrop-blur-sm md:items-center md:justify-center p-0 md:p-4 animate-in fade-in zoom-in duration-200">
           <div className="flex flex-col h-full w-full md:max-w-md md:h-[600px] bg-stone-900 md:rounded-lg shadow-2xl overflow-hidden border border-stone-800">
             <div className="bg-stone-950 p-4 flex justify-between items-center border-b border-stone-800">
               <div className="flex items-center gap-2">
@@ -575,9 +599,7 @@ function AuthModal({ lang, t, onClose, onLogin }) {
           <form onSubmit={handleSubmit} className="space-y-4">
             <input type="text" placeholder={t.name_placeholder} required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-stone-950 border border-stone-800 p-3 text-white outline-none focus:border-amber-600" />
             <input type="tel" placeholder={t.phone_placeholder} required value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full bg-stone-950 border border-stone-800 p-3 text-white outline-none focus:border-amber-600" />
-            
             <p className="text-[10px] text-stone-600 text-center">({t.hint_admin})</p>
-
             {mode === 'member' && (
               <div className="animate-in fade-in slide-in-from-top-2">
                  <input type="password" placeholder={t.pass_placeholder} value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full bg-stone-950 border border-stone-800 p-3 text-white outline-none focus:border-amber-600" />
@@ -596,7 +618,7 @@ function AuthModal({ lang, t, onClose, onLogin }) {
 function HeroSection({ lang, t, notices, onCta, reservationsEnabled }) {
   const latestNotice = notices.find(n => n.active);
   return (
-    <div className="relative h-screen md:h-[90vh] flex items-center justify-center overflow-hidden">
+    <div className="relative h-screen md:h-[90vh] flex items-center justify-center overflow-hidden w-full">
        {latestNotice && (
          <div className="absolute top-20 md:top-24 left-0 right-0 z-20 flex justify-center">
            <div className="bg-amber-900/80 backdrop-blur border border-amber-700/50 px-6 py-2 rounded-full flex items-center gap-3 animate-fade-in-down shadow-lg cursor-pointer max-w-[90%]">
@@ -625,7 +647,7 @@ function HeroSection({ lang, t, notices, onCta, reservationsEnabled }) {
 
 function MenuSection({ lang, t, menuData, isMember }) {
   return (
-    <div className="py-24 px-6 max-w-6xl mx-auto">
+    <div className="py-24 px-6 max-w-6xl mx-auto w-full">
       {isMember && (
         <div className="mb-12 bg-amber-900/20 border border-amber-700/30 p-4 flex items-center gap-3 rounded-lg justify-center animate-fade-in">
           <Crown size={20} className="text-amber-500" />
@@ -668,7 +690,7 @@ function MenuSection({ lang, t, menuData, isMember }) {
 
 function EventsSection({ lang, t, notices }) {
   return (
-    <div className="py-24 px-6 max-w-5xl mx-auto min-h-screen">
+    <div className="py-24 px-6 max-w-5xl mx-auto min-h-screen w-full">
       <div className="text-center mb-16">
         <span className="text-amber-600 uppercase tracking-widest text-xs font-bold mb-2 block">{t.happening}</span>
         <h2 className="text-4xl font-serif text-white">{t.events_title}</h2>
@@ -693,7 +715,7 @@ function EventsSection({ lang, t, notices }) {
 function ProfileSection({ lang, t, user, myBookings, onLogout }) {
   if (!user) return null;
   return (
-    <div className="py-24 px-6 max-w-lg mx-auto min-h-screen">
+    <div className="py-24 px-6 max-w-lg mx-auto min-h-screen w-full">
       <div className="text-center mb-12">
         <div className={`w-24 h-24 rounded-full mx-auto flex items-center justify-center border-4 mb-4 ${user.role === 'admin' ? 'bg-stone-200 border-stone-500' : user.role === 'member' ? 'bg-amber-900/20 border-amber-500' : 'bg-stone-800 border-stone-600'}`}>
           {user.role === 'admin' ? <ShieldCheck size={40} className="text-stone-800" /> : user.role === 'member' ? <Crown size={40} className="text-amber-500" /> : <User size={40} className="text-stone-400" />}
@@ -818,6 +840,10 @@ const StatCard = ({ label, value, color }) => (
 const NavTextBtn = ({ label, active, onClick }) => (
   <button onClick={onClick} className={`hover:text-amber-500 transition-colors ${active ? 'text-amber-500' : 'text-stone-400'}`}>{label}</button>
 );
+// Updated Button Component for Mobile Sizing
 const NavIconBtn = ({ icon, label, active, onClick }) => (
-  <button onClick={onClick} className={`flex flex-col items-center gap-1 ${active ? 'text-amber-500' : 'text-stone-600'}`}>{icon}<span className="text-[10px] font-medium">{label}</span></button>
+  <button onClick={onClick} className={`flex flex-col items-center justify-center gap-1 w-full h-full ${active ? 'text-amber-500' : 'text-stone-600'}`}>
+    {icon}
+    <span className="text-[10px] font-medium leading-none">{label}</span>
+  </button>
 );
