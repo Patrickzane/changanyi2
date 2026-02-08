@@ -388,27 +388,28 @@ export default function App() {
         </div>
       </div>
 
-      {/* Desktop Nav - 4.0 Floating Pill Design */}
+      {/* Desktop Nav - 5.0 Grid Layout for Perfect Symmetry */}
       <nav className="hidden md:flex fixed top-0 w-full z-50 justify-center pt-6 pointer-events-none">
-        <div className="pointer-events-auto bg-stone-950/90 backdrop-blur border border-stone-800/50 rounded-full px-10 py-3 flex justify-between items-center shadow-2xl max-w-6xl w-[80%]">
-          {/* Left: Brand */}
-          <div className="flex flex-col w-1/4">
+        <div className="pointer-events-auto bg-stone-950/90 backdrop-blur border border-stone-800/50 rounded-full px-10 py-3 grid grid-cols-[25%_50%_25%] items-center shadow-2xl max-w-6xl w-[80%]">
+          
+          {/* Left: Brand (Align Start) */}
+          <div className="flex flex-col justify-self-start">
             <div className="text-2xl font-serif tracking-widest font-bold text-white leading-none">
               {T[lang].brand}
             </div>
             <span className="text-[10px] text-amber-600/80 uppercase tracking-[0.2em] mt-1">{T[lang].subtitle}</span>
           </div>
 
-          {/* Center: Links */}
-          <div className="flex justify-center w-2/4 space-x-12 text-sm tracking-widest uppercase font-medium">
+          {/* Center: Links (Align Center) */}
+          <div className="flex justify-center space-x-12 text-sm tracking-widest uppercase font-medium justify-self-center">
             <NavTextBtn label={T[lang].nav_home} active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
             <NavTextBtn label={T[lang].nav_menu} active={activeTab === 'menu'} onClick={() => setActiveTab('menu')} />
             <NavTextBtn label={T[lang].nav_events} active={activeTab === 'events'} onClick={() => setActiveTab('events')} />
             {CONFIG.ENABLE_RESERVATIONS && <NavTextBtn label={T[lang].nav_bookings} active={activeTab === 'profile'} onClick={() => currentUser ? setActiveTab('profile') : setShowLoginModal(true)} />}
           </div>
 
-          {/* Right: Actions */}
-          <div className="flex items-center justify-end gap-6 w-1/4">
+          {/* Right: Actions (Align End) */}
+          <div className="flex items-center gap-6 justify-self-end">
             <button onClick={() => setLang(lang === 'zh' ? 'es' : 'zh')} className="flex items-center gap-1 text-xs font-bold text-stone-400 hover:text-white transition-colors">
               <Globe size={14} /> {lang === 'zh' ? 'ES' : '中文'}
             </button>
@@ -465,7 +466,7 @@ export default function App() {
       <footer className="bg-stone-950 border-t border-stone-800 w-full mt-auto">
         <div className="max-w-7xl mx-auto py-8 px-6 text-center">
           <p className="text-stone-600 text-xs uppercase tracking-widest mb-4">
-            {T[lang].footer_copy} <span className="text-stone-800 ml-2">v4.0 Floating Layout</span>
+            {T[lang].footer_copy} <span className="text-stone-800 ml-2">v5.0 Symmetric Grid</span>
           </p>
           <button 
             onClick={() => {
