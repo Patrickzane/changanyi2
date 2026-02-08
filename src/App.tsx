@@ -388,16 +388,18 @@ export default function App() {
         </div>
       </div>
 
-      {/* Desktop Nav - Constrained Width Container */}
-      <nav className="hidden md:block fixed w-full z-50 bg-stone-950/90 backdrop-blur border-b border-stone-800/50">
-        <div className="max-w-7xl mx-auto px-6 py-6 flex justify-between items-center">
+      {/* Desktop Nav - 4.0 Floating Pill Design */}
+      <nav className="hidden md:flex fixed top-0 w-full z-50 justify-center pt-6 pointer-events-none">
+        <div className="pointer-events-auto bg-stone-950/90 backdrop-blur border border-stone-800/50 rounded-full px-10 py-3 flex justify-between items-center shadow-2xl max-w-6xl w-[80%]">
+          {/* Left: Brand */}
           <div className="flex flex-col w-1/4">
-            <div className="text-2xl font-serif tracking-widest font-bold text-white border-l-4 border-amber-600 pl-3 leading-none">
+            <div className="text-2xl font-serif tracking-widest font-bold text-white leading-none">
               {T[lang].brand}
             </div>
-            <span className="text-[10px] text-amber-600/80 uppercase tracking-[0.2em] pl-4 mt-1">{T[lang].subtitle}</span>
+            <span className="text-[10px] text-amber-600/80 uppercase tracking-[0.2em] mt-1">{T[lang].subtitle}</span>
           </div>
 
+          {/* Center: Links */}
           <div className="flex justify-center w-2/4 space-x-12 text-sm tracking-widest uppercase font-medium">
             <NavTextBtn label={T[lang].nav_home} active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
             <NavTextBtn label={T[lang].nav_menu} active={activeTab === 'menu'} onClick={() => setActiveTab('menu')} />
@@ -405,6 +407,7 @@ export default function App() {
             {CONFIG.ENABLE_RESERVATIONS && <NavTextBtn label={T[lang].nav_bookings} active={activeTab === 'profile'} onClick={() => currentUser ? setActiveTab('profile') : setShowLoginModal(true)} />}
           </div>
 
+          {/* Right: Actions */}
           <div className="flex items-center justify-end gap-6 w-1/4">
             <button onClick={() => setLang(lang === 'zh' ? 'es' : 'zh')} className="flex items-center gap-1 text-xs font-bold text-stone-400 hover:text-white transition-colors">
               <Globe size={14} /> {lang === 'zh' ? 'ES' : '中文'}
@@ -451,7 +454,7 @@ export default function App() {
             }} 
           />
         )}
-        <div className="w-full max-w-7xl mx-auto px-6"> {/* Added px-6 for padding on large screens */}
+        <div className="w-full max-w-7xl mx-auto px-6"> 
           {activeTab === 'menu' && <MenuSection lang={lang} t={T[lang]} menuData={menuData} isMember={currentUser?.role === 'member'} />}
           {activeTab === 'events' && <EventsSection lang={lang} t={T[lang]} notices={notices} />}
           {activeTab === 'profile' && <ProfileSection lang={lang} t={T[lang]} user={currentUser} myBookings={reservations.filter(r => r.phone === currentUser?.phone)} onLogout={handleLogout} />}
@@ -462,7 +465,7 @@ export default function App() {
       <footer className="bg-stone-950 border-t border-stone-800 w-full mt-auto">
         <div className="max-w-7xl mx-auto py-8 px-6 text-center">
           <p className="text-stone-600 text-xs uppercase tracking-widest mb-4">
-            {T[lang].footer_copy} <span className="text-stone-800 ml-2">v3.0 Final Layout</span>
+            {T[lang].footer_copy} <span className="text-stone-800 ml-2">v4.0 Floating Layout</span>
           </p>
           <button 
             onClick={() => {
@@ -484,21 +487,16 @@ export default function App() {
         </div>
       </footer>
 
-      {/* Mobile Bottom Nav */}
+      {/* Mobile Bottom Nav - 5 Column Grid */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-stone-900 border-t border-stone-800 z-50 safe-area-bottom pb-1">
         <div className="grid grid-cols-5 h-[60px] items-end">
-          
           <NavIconBtn icon={<Utensils size={20} />} label={T[lang].nav_menu} active={activeTab === 'menu'} onClick={() => setActiveTab('menu')} />
-          
           <NavIconBtn icon={<Megaphone size={20} />} label={T[lang].nav_events} active={activeTab === 'events'} onClick={() => setActiveTab('events')} />
-          
-          {/* Center Button Wrapper */}
           <div className="relative h-full flex justify-center items-center pointer-events-none">
              <div className="absolute -top-6 bg-amber-600 p-3.5 rounded-full shadow-[0_0_15px_rgba(217,119,6,0.4)] border-4 border-stone-950 transform active:scale-95 transition-transform z-10 pointer-events-auto" onClick={() => setActiveTab('home')}>
                <ChefHat className="text-white" size={24} />
              </div>
           </div>
-
           {CONFIG.ENABLE_RESERVATIONS ? (
              <NavIconBtn 
                icon={<Sparkles size={20} />} 
@@ -509,7 +507,6 @@ export default function App() {
           ) : (
              <NavIconBtn icon={<Phone size={20} />} label="Tel" onClick={() => alert("Call: +34 91 123 4567")} />
           )}
-
           {CONFIG.ENABLE_RESERVATIONS ? (
             <NavIconBtn 
               icon={<User size={20} />} 
