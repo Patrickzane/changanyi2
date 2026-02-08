@@ -328,9 +328,10 @@ export default function App() {
         </div>
       </div>
 
-      {/* --- DESKTOP FLOATING NAVBAR (V7.0) --- */}
-      <nav className="hidden md:flex fixed top-0 w-full z-50 justify-center pt-6 pointer-events-none">
-        <div className="pointer-events-auto bg-stone-950/80 backdrop-blur-md border border-stone-800/60 rounded-full px-8 py-3 grid grid-cols-[1fr_auto_1fr] items-center shadow-2xl w-full max-w-5xl">
+      {/* --- DESKTOP FLOATING NAVBAR (V7.1 Fixed) --- */}
+      {/* ADDED: left-0 right-0 (inset-x-0) to force full width centering */}
+      <nav className="hidden md:flex fixed top-0 inset-x-0 w-full z-50 justify-center pt-6 pointer-events-none">
+        <div className="pointer-events-auto bg-stone-950/80 backdrop-blur-md border border-stone-800/60 rounded-full px-8 py-3 grid grid-cols-[1fr_auto_1fr] items-center shadow-2xl w-full max-w-5xl mx-auto">
           
           {/* 1. Left: Brand */}
           <div className="flex flex-col justify-self-start">
@@ -381,7 +382,7 @@ export default function App() {
       {/* Footer */}
       <footer className="bg-stone-950 border-t border-stone-800 w-full mt-auto">
         <div className="max-w-[1600px] mx-auto py-12 px-12 text-center">
-          <p className="text-stone-600 text-xs uppercase tracking-widest mb-4">{T[lang].footer_copy} <span className="text-stone-800 ml-2">v7.0 Floating Island</span></p>
+          <p className="text-stone-600 text-xs uppercase tracking-widest mb-4">{T[lang].footer_copy} <span className="text-stone-800 ml-2">v7.1 Fixed Center</span></p>
           <button onClick={() => { if (!CONFIG.ENABLE_RESERVATIONS) { if(window.confirm(`${T[lang].staff_access}?`)) setViewMode('admin'); } else { if (currentUser?.phone === CONFIG.ADMIN_PHONE) { setViewMode('admin'); } else { alert(lang === 'zh' ? "权限受限。请以经理身份登录。" : "Acceso restringido."); setShowLoginModal(true); } } }} className="inline-flex items-center gap-1 text-stone-800 hover:text-stone-600 transition-colors text-[10px] uppercase tracking-wider"><Lock size={10} /> {T[lang].staff_access}</button>
         </div>
       </footer>
@@ -401,7 +402,7 @@ export default function App() {
 
       {/* AI Drawer */}
       {CONFIG.ENABLE_RESERVATIONS && isOracleOpen && (
-        <div className="fixed inset-0 z-[60] flex flex-col bg-black/80 backdrop-blur-sm md:items-center md:justify-center p-0 md:p-4">
+        <div className="fixed inset-0 z-[60] flex flex-col bg-black/80 backdrop-blur-sm md:items-center md:justify-center p-0 md:p-4 animate-in fade-in zoom-in duration-200">
           <div className="flex flex-col h-full w-full md:max-w-md md:h-[600px] bg-stone-900 md:rounded-lg shadow-2xl overflow-hidden border border-stone-800">
             <div className="bg-stone-950 p-4 flex justify-between items-center border-b border-stone-800">
               <div className="flex items-center gap-2"><Sparkles className="text-amber-500" size={18} /><h3 className="font-serif text-lg text-white">{currentUser?.role === 'admin' ? 'SYSTEM ADMIN' : T[lang].nav_ai}</h3></div>
