@@ -388,42 +388,44 @@ export default function App() {
         </div>
       </div>
 
-      {/* Desktop Nav - Centered Layout */}
-      <nav className="hidden md:flex fixed w-full z-50 py-6 px-10 justify-between items-center bg-stone-950/90 backdrop-blur border-b border-stone-800/50">
-        <div className="flex flex-col w-1/4">
-          <div className="text-2xl font-serif tracking-widest font-bold text-white border-l-4 border-amber-600 pl-3 leading-none">
-            {T[lang].brand}
+      {/* Desktop Nav - Constrained Width Container */}
+      <nav className="hidden md:block fixed w-full z-50 bg-stone-950/90 backdrop-blur border-b border-stone-800/50">
+        <div className="max-w-7xl mx-auto px-6 py-6 flex justify-between items-center">
+          <div className="flex flex-col w-1/4">
+            <div className="text-2xl font-serif tracking-widest font-bold text-white border-l-4 border-amber-600 pl-3 leading-none">
+              {T[lang].brand}
+            </div>
+            <span className="text-[10px] text-amber-600/80 uppercase tracking-[0.2em] pl-4 mt-1">{T[lang].subtitle}</span>
           </div>
-          <span className="text-[10px] text-amber-600/80 uppercase tracking-[0.2em] pl-4 mt-1">{T[lang].subtitle}</span>
-        </div>
 
-        <div className="flex justify-center w-2/4 space-x-12 text-sm tracking-widest uppercase font-medium">
-          <NavTextBtn label={T[lang].nav_home} active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
-          <NavTextBtn label={T[lang].nav_menu} active={activeTab === 'menu'} onClick={() => setActiveTab('menu')} />
-          <NavTextBtn label={T[lang].nav_events} active={activeTab === 'events'} onClick={() => setActiveTab('events')} />
-          {CONFIG.ENABLE_RESERVATIONS && <NavTextBtn label={T[lang].nav_bookings} active={activeTab === 'profile'} onClick={() => currentUser ? setActiveTab('profile') : setShowLoginModal(true)} />}
-        </div>
+          <div className="flex justify-center w-2/4 space-x-12 text-sm tracking-widest uppercase font-medium">
+            <NavTextBtn label={T[lang].nav_home} active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
+            <NavTextBtn label={T[lang].nav_menu} active={activeTab === 'menu'} onClick={() => setActiveTab('menu')} />
+            <NavTextBtn label={T[lang].nav_events} active={activeTab === 'events'} onClick={() => setActiveTab('events')} />
+            {CONFIG.ENABLE_RESERVATIONS && <NavTextBtn label={T[lang].nav_bookings} active={activeTab === 'profile'} onClick={() => currentUser ? setActiveTab('profile') : setShowLoginModal(true)} />}
+          </div>
 
-        <div className="flex items-center justify-end gap-6 w-1/4">
-          <button onClick={() => setLang(lang === 'zh' ? 'es' : 'zh')} className="flex items-center gap-1 text-xs font-bold text-stone-400 hover:text-white transition-colors">
-            <Globe size={14} /> {lang === 'zh' ? 'ES' : '中文'}
-          </button>
-          
-          {CONFIG.ENABLE_RESERVATIONS && (
-            <button onClick={() => { if(!currentUser) setShowLoginModal(true); setIsOracleOpen(true); }} className="flex items-center gap-2 text-amber-500 hover:text-amber-400 transition-all">
-              <Sparkles size={16} />
+          <div className="flex items-center justify-end gap-6 w-1/4">
+            <button onClick={() => setLang(lang === 'zh' ? 'es' : 'zh')} className="flex items-center gap-1 text-xs font-bold text-stone-400 hover:text-white transition-colors">
+              <Globe size={14} /> {lang === 'zh' ? 'ES' : '中文'}
             </button>
-          )}
-
-          <div className="text-xs uppercase tracking-wider">
-            {currentUser ? (
-              <span className="flex items-center gap-2 text-amber-600 border border-amber-900/50 px-3 py-1.5 rounded-full bg-stone-900/50">
-                {currentUser.role === 'admin' ? <ShieldCheck size={14} /> : currentUser.role === 'member' ? <Crown size={14} fill="currentColor" /> : <User size={14} />} 
-                {currentUser.role === 'admin' ? 'ADMIN' : currentUser.name}
-              </span>
-            ) : (
-              <button onClick={() => setShowLoginModal(true)} className="hover:text-white flex items-center gap-2 border border-stone-600 px-3 py-1.5 rounded-full transition-colors hover:border-white"><LogIn size={14} /> {T[lang].sign_in}</button>
+            
+            {CONFIG.ENABLE_RESERVATIONS && (
+              <button onClick={() => { if(!currentUser) setShowLoginModal(true); setIsOracleOpen(true); }} className="flex items-center gap-2 text-amber-500 hover:text-amber-400 transition-all">
+                <Sparkles size={16} />
+              </button>
             )}
+
+            <div className="text-xs uppercase tracking-wider">
+              {currentUser ? (
+                <span className="flex items-center gap-2 text-amber-600 border border-amber-900/50 px-3 py-1.5 rounded-full bg-stone-900/50">
+                  {currentUser.role === 'admin' ? <ShieldCheck size={14} /> : currentUser.role === 'member' ? <Crown size={14} fill="currentColor" /> : <User size={14} />} 
+                  {currentUser.role === 'admin' ? 'ADMIN' : currentUser.name}
+                </span>
+              ) : (
+                <button onClick={() => setShowLoginModal(true)} className="hover:text-white flex items-center gap-2 border border-stone-600 px-3 py-1.5 rounded-full transition-colors hover:border-white"><LogIn size={14} /> {T[lang].sign_in}</button>
+              )}
+            </div>
           </div>
         </div>
       </nav>
@@ -431,7 +433,7 @@ export default function App() {
       {/* Login Modal */}
       {showLoginModal && <AuthModal lang={lang} t={T[lang]} onClose={() => setShowLoginModal(false)} onLogin={handleLogin} />}
 
-      {/* Main Content - Improved Centering */}
+      {/* Main Content */}
       <main className="flex-grow flex flex-col items-center w-full">
         {activeTab === 'home' && (
           <HeroSection 
@@ -449,55 +451,54 @@ export default function App() {
             }} 
           />
         )}
-        <div className="w-full max-w-7xl mx-auto">
+        <div className="w-full max-w-7xl mx-auto px-6"> {/* Added px-6 for padding on large screens */}
           {activeTab === 'menu' && <MenuSection lang={lang} t={T[lang]} menuData={menuData} isMember={currentUser?.role === 'member'} />}
           {activeTab === 'events' && <EventsSection lang={lang} t={T[lang]} notices={notices} />}
           {activeTab === 'profile' && <ProfileSection lang={lang} t={T[lang]} user={currentUser} myBookings={reservations.filter(r => r.phone === currentUser?.phone)} onLogout={handleLogout} />}
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="bg-stone-950 border-t border-stone-800 py-8 px-6 text-center w-full mt-auto">
-        <p className="text-stone-600 text-xs uppercase tracking-widest mb-4">
-          {T[lang].footer_copy}
-        </p>
-        <button 
-          onClick={() => {
-            if (!CONFIG.ENABLE_RESERVATIONS) {
-               if(window.confirm(`${T[lang].staff_access}?`)) setViewMode('admin');
-            } else {
-               if (currentUser?.phone === CONFIG.ADMIN_PHONE) {
-                 setViewMode('admin');
-               } else {
-                 alert(lang === 'zh' ? "权限受限。请以经理身份登录。" : "Acceso restringido. Inicie sesión como Gerente.");
-                 setShowLoginModal(true);
-               }
-            }
-          }}
-          className="inline-flex items-center gap-1 text-stone-800 hover:text-stone-600 transition-colors text-[10px] uppercase tracking-wider"
-        >
-          <Lock size={10} /> {T[lang].staff_access}
-        </button>
+      {/* Footer - Constrained Content */}
+      <footer className="bg-stone-950 border-t border-stone-800 w-full mt-auto">
+        <div className="max-w-7xl mx-auto py-8 px-6 text-center">
+          <p className="text-stone-600 text-xs uppercase tracking-widest mb-4">
+            {T[lang].footer_copy} <span className="text-stone-800 ml-2">v3.0 Final Layout</span>
+          </p>
+          <button 
+            onClick={() => {
+              if (!CONFIG.ENABLE_RESERVATIONS) {
+                 if(window.confirm(`${T[lang].staff_access}?`)) setViewMode('admin');
+              } else {
+                 if (currentUser?.phone === CONFIG.ADMIN_PHONE) {
+                   setViewMode('admin');
+                 } else {
+                   alert(lang === 'zh' ? "权限受限。请以经理身份登录。" : "Acceso restringido. Inicie sesión como Gerente.");
+                   setShowLoginModal(true);
+                 }
+              }
+            }}
+            className="inline-flex items-center gap-1 text-stone-800 hover:text-stone-600 transition-colors text-[10px] uppercase tracking-wider"
+          >
+            <Lock size={10} /> {T[lang].staff_access}
+          </button>
+        </div>
       </footer>
 
-      {/* Mobile Bottom Nav - 2-1-2 Symmetry */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-stone-900 border-t border-stone-800 flex justify-between items-end px-4 py-2 z-50 safe-area-bottom h-[80px]">
-        {/* Left Side (2 items) */}
-        <div className="flex gap-1 w-[35%] justify-around pb-2">
+      {/* Mobile Bottom Nav */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-stone-900 border-t border-stone-800 z-50 safe-area-bottom pb-1">
+        <div className="grid grid-cols-5 h-[60px] items-end">
+          
           <NavIconBtn icon={<Utensils size={20} />} label={T[lang].nav_menu} active={activeTab === 'menu'} onClick={() => setActiveTab('menu')} />
+          
           <NavIconBtn icon={<Megaphone size={20} />} label={T[lang].nav_events} active={activeTab === 'events'} onClick={() => setActiveTab('events')} />
-        </div>
+          
+          {/* Center Button Wrapper */}
+          <div className="relative h-full flex justify-center items-center pointer-events-none">
+             <div className="absolute -top-6 bg-amber-600 p-3.5 rounded-full shadow-[0_0_15px_rgba(217,119,6,0.4)] border-4 border-stone-950 transform active:scale-95 transition-transform z-10 pointer-events-auto" onClick={() => setActiveTab('home')}>
+               <ChefHat className="text-white" size={24} />
+             </div>
+          </div>
 
-        {/* Center Floating Button (1 item) */}
-        <div className="relative -top-6 w-[20%] flex justify-center" onClick={() => setActiveTab('home')}>
-           <div className="bg-amber-600 p-4 rounded-full shadow-[0_0_15px_rgba(217,119,6,0.4)] border-4 border-stone-950 transform hover:scale-105 transition-transform">
-             <ChefHat className="text-white" size={28} />
-           </div>
-        </div>
-
-        {/* Right Side (2 items) */}
-        <div className="flex gap-1 w-[35%] justify-around pb-2">
-          {/* Item 4: AI Concierge (Adding this creates symmetry) */}
           {CONFIG.ENABLE_RESERVATIONS ? (
              <NavIconBtn 
                icon={<Sparkles size={20} />} 
@@ -509,7 +510,6 @@ export default function App() {
              <NavIconBtn icon={<Phone size={20} />} label="Tel" onClick={() => alert("Call: +34 91 123 4567")} />
           )}
 
-          {/* Item 5: Profile/Login */}
           {CONFIG.ENABLE_RESERVATIONS ? (
             <NavIconBtn 
               icon={<User size={20} />} 
@@ -647,9 +647,9 @@ function HeroSection({ lang, t, notices, onCta, reservationsEnabled }) {
 
 function MenuSection({ lang, t, menuData, isMember }) {
   return (
-    <div className="py-24 px-6 max-w-6xl mx-auto w-full">
+    <div className="py-24 px-6 w-full">
       {isMember && (
-        <div className="mb-12 bg-amber-900/20 border border-amber-700/30 p-4 flex items-center gap-3 rounded-lg justify-center animate-fade-in">
+        <div className="mb-12 bg-amber-900/20 border border-amber-700/30 p-4 flex items-center gap-3 rounded-lg justify-center animate-fade-in max-w-2xl mx-auto">
           <Crown size={20} className="text-amber-500" />
           <p className="text-amber-200 text-sm font-medium">{t.member_price_active}</p>
         </div>
@@ -690,7 +690,7 @@ function MenuSection({ lang, t, menuData, isMember }) {
 
 function EventsSection({ lang, t, notices }) {
   return (
-    <div className="py-24 px-6 max-w-5xl mx-auto min-h-screen w-full">
+    <div className="py-24 px-6 w-full min-h-screen">
       <div className="text-center mb-16">
         <span className="text-amber-600 uppercase tracking-widest text-xs font-bold mb-2 block">{t.happening}</span>
         <h2 className="text-4xl font-serif text-white">{t.events_title}</h2>
