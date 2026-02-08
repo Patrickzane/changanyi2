@@ -388,9 +388,9 @@ export default function App() {
         </div>
       </div>
 
-      {/* Desktop Nav - 5.0 Grid Layout for Perfect Symmetry */}
-      <nav className="hidden md:flex fixed top-0 w-full z-50 justify-center pt-6 pointer-events-none">
-        <div className="pointer-events-auto bg-stone-950/90 backdrop-blur border border-stone-800/50 rounded-full px-10 py-3 grid grid-cols-[25%_50%_25%] items-center shadow-2xl max-w-6xl w-[80%]">
+      {/* Desktop Nav - 6.0 Full Width Symmetry */}
+      <nav className="hidden md:block fixed top-0 w-full z-50 bg-stone-950/90 backdrop-blur border-b border-stone-800 transition-all duration-300">
+        <div className="w-full max-w-[1920px] mx-auto px-12 h-24 grid grid-cols-3 items-center">
           
           {/* Left: Brand (Align Start) */}
           <div className="flex flex-col justify-self-start">
@@ -401,7 +401,7 @@ export default function App() {
           </div>
 
           {/* Center: Links (Align Center) */}
-          <div className="flex justify-center space-x-12 text-sm tracking-widest uppercase font-medium justify-self-center">
+          <div className="flex justify-center space-x-16 text-sm tracking-widest uppercase font-medium justify-self-center">
             <NavTextBtn label={T[lang].nav_home} active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
             <NavTextBtn label={T[lang].nav_menu} active={activeTab === 'menu'} onClick={() => setActiveTab('menu')} />
             <NavTextBtn label={T[lang].nav_events} active={activeTab === 'events'} onClick={() => setActiveTab('events')} />
@@ -409,7 +409,7 @@ export default function App() {
           </div>
 
           {/* Right: Actions (Align End) */}
-          <div className="flex items-center gap-6 justify-self-end">
+          <div className="flex items-center gap-8 justify-self-end">
             <button onClick={() => setLang(lang === 'zh' ? 'es' : 'zh')} className="flex items-center gap-1 text-xs font-bold text-stone-400 hover:text-white transition-colors">
               <Globe size={14} /> {lang === 'zh' ? 'ES' : '中文'}
             </button>
@@ -422,12 +422,12 @@ export default function App() {
 
             <div className="text-xs uppercase tracking-wider">
               {currentUser ? (
-                <span className="flex items-center gap-2 text-amber-600 border border-amber-900/50 px-3 py-1.5 rounded-full bg-stone-900/50">
+                <span className="flex items-center gap-2 text-amber-600 border border-amber-900/50 px-4 py-2 rounded-full bg-stone-900/50 hover:bg-stone-800 transition-colors cursor-pointer" onClick={() => setActiveTab('profile')}>
                   {currentUser.role === 'admin' ? <ShieldCheck size={14} /> : currentUser.role === 'member' ? <Crown size={14} fill="currentColor" /> : <User size={14} />} 
                   {currentUser.role === 'admin' ? 'ADMIN' : currentUser.name}
                 </span>
               ) : (
-                <button onClick={() => setShowLoginModal(true)} className="hover:text-white flex items-center gap-2 border border-stone-600 px-3 py-1.5 rounded-full transition-colors hover:border-white"><LogIn size={14} /> {T[lang].sign_in}</button>
+                <button onClick={() => setShowLoginModal(true)} className="hover:text-white flex items-center gap-2 border border-stone-600 px-4 py-2 rounded-full transition-colors hover:border-white"><LogIn size={14} /> {T[lang].sign_in}</button>
               )}
             </div>
           </div>
@@ -438,7 +438,7 @@ export default function App() {
       {showLoginModal && <AuthModal lang={lang} t={T[lang]} onClose={() => setShowLoginModal(false)} onLogin={handleLogin} />}
 
       {/* Main Content */}
-      <main className="flex-grow flex flex-col items-center w-full">
+      <main className="flex-grow flex flex-col items-center w-full pt-24">
         {activeTab === 'home' && (
           <HeroSection 
             lang={lang}
@@ -455,7 +455,7 @@ export default function App() {
             }} 
           />
         )}
-        <div className="w-full max-w-7xl mx-auto px-6"> 
+        <div className="w-full max-w-[1600px] mx-auto px-8 md:px-12"> 
           {activeTab === 'menu' && <MenuSection lang={lang} t={T[lang]} menuData={menuData} isMember={currentUser?.role === 'member'} />}
           {activeTab === 'events' && <EventsSection lang={lang} t={T[lang]} notices={notices} />}
           {activeTab === 'profile' && <ProfileSection lang={lang} t={T[lang]} user={currentUser} myBookings={reservations.filter(r => r.phone === currentUser?.phone)} onLogout={handleLogout} />}
@@ -464,9 +464,9 @@ export default function App() {
 
       {/* Footer - Constrained Content */}
       <footer className="bg-stone-950 border-t border-stone-800 w-full mt-auto">
-        <div className="max-w-7xl mx-auto py-8 px-6 text-center">
+        <div className="max-w-[1600px] mx-auto py-12 px-12 text-center">
           <p className="text-stone-600 text-xs uppercase tracking-widest mb-4">
-            {T[lang].footer_copy} <span className="text-stone-800 ml-2">v5.0 Symmetric Grid</span>
+            {T[lang].footer_copy} <span className="text-stone-800 ml-2">v6.0 Full Width Symmetry</span>
           </p>
           <button 
             onClick={() => {
@@ -616,9 +616,9 @@ function AuthModal({ lang, t, onClose, onLogin }) {
 function HeroSection({ lang, t, notices, onCta, reservationsEnabled }) {
   const latestNotice = notices.find(n => n.active);
   return (
-    <div className="relative h-screen md:h-[90vh] flex items-center justify-center overflow-hidden w-full">
+    <div className="relative h-screen flex items-center justify-center overflow-hidden w-full">
        {latestNotice && (
-         <div className="absolute top-20 md:top-24 left-0 right-0 z-20 flex justify-center">
+         <div className="absolute top-28 md:top-32 left-0 right-0 z-20 flex justify-center">
            <div className="bg-amber-900/80 backdrop-blur border border-amber-700/50 px-6 py-2 rounded-full flex items-center gap-3 animate-fade-in-down shadow-lg cursor-pointer max-w-[90%]">
              <Megaphone size={14} className="text-amber-200 animate-pulse" />
              <span className="text-xs font-bold text-amber-100 uppercase tracking-wider truncate">{latestNotice.title[lang]}: {latestNotice.content[lang]}</span>
@@ -645,7 +645,7 @@ function HeroSection({ lang, t, notices, onCta, reservationsEnabled }) {
 
 function MenuSection({ lang, t, menuData, isMember }) {
   return (
-    <div className="py-24 px-6 w-full">
+    <div className="py-24 w-full">
       {isMember && (
         <div className="mb-12 bg-amber-900/20 border border-amber-700/30 p-4 flex items-center gap-3 rounded-lg justify-center animate-fade-in max-w-2xl mx-auto">
           <Crown size={20} className="text-amber-500" />
@@ -661,7 +661,7 @@ function MenuSection({ lang, t, menuData, isMember }) {
                 const finalPrice = isMember ? (item.price * (1 - CONFIG.MEMBER_DISCOUNT)).toFixed(1) : item.price;
                 return (
                   <div key={item.id} className="group bg-stone-900/50 rounded-lg overflow-hidden border border-stone-800 hover:border-amber-800 transition-all hover:shadow-xl">
-                    <div className="h-48 overflow-hidden relative">
+                    <div className="h-64 overflow-hidden relative">
                       <img src={item.img} alt={item.name[lang]} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                       <div className="absolute inset-0 bg-gradient-to-t from-stone-900 via-transparent to-transparent opacity-80"></div>
                       <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur px-3 py-1 rounded text-white font-bold border border-white/10">
@@ -688,7 +688,7 @@ function MenuSection({ lang, t, menuData, isMember }) {
 
 function EventsSection({ lang, t, notices }) {
   return (
-    <div className="py-24 px-6 w-full min-h-screen">
+    <div className="py-24 w-full min-h-screen">
       <div className="text-center mb-16">
         <span className="text-amber-600 uppercase tracking-widest text-xs font-bold mb-2 block">{t.happening}</span>
         <h2 className="text-4xl font-serif text-white">{t.events_title}</h2>
@@ -713,7 +713,7 @@ function EventsSection({ lang, t, notices }) {
 function ProfileSection({ lang, t, user, myBookings, onLogout }) {
   if (!user) return null;
   return (
-    <div className="py-24 px-6 max-w-lg mx-auto min-h-screen w-full">
+    <div className="py-24 max-w-lg mx-auto min-h-screen w-full">
       <div className="text-center mb-12">
         <div className={`w-24 h-24 rounded-full mx-auto flex items-center justify-center border-4 mb-4 ${user.role === 'admin' ? 'bg-stone-200 border-stone-500' : user.role === 'member' ? 'bg-amber-900/20 border-amber-500' : 'bg-stone-800 border-stone-600'}`}>
           {user.role === 'admin' ? <ShieldCheck size={40} className="text-stone-800" /> : user.role === 'member' ? <Crown size={40} className="text-amber-500" /> : <User size={40} className="text-stone-400" />}
